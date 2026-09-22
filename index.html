@@ -247,6 +247,10 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 .layer-mix-panel{
   border:1px solid var(--line);border-radius:3px;padding:10px 14px;margin-bottom:10px;
   display:flex;flex-direction:column;gap:8px;background:#fff;
+  max-height:260px;overflow-y:auto;
+}
+.layer-mix-hint{
+  font-size:.72rem;color:var(--bark-soft);border-top:1px solid var(--line);padding-top:8px;margin-top:2px;
 }
 .layer-mix-row{display:flex;align-items:center;gap:10px;}
 .layer-mix-row label{display:flex;align-items:center;gap:6px;font-size:.85rem;flex:0 0 190px;}
@@ -435,10 +439,31 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
         <label><input type="checkbox" class="layer-check"> 🏔️ Relief (sans végétation)</label>
         <input type="range" class="layer-opacity" min="0" max="100" value="60">
       </div>
+      <div class="layer-mix-row" data-layer="topo">
+        <label><input type="checkbox" class="layer-check"> 🗺️ Topographique</label>
+        <input type="range" class="layer-opacity" min="0" max="100" value="100">
+      </div>
+      <div class="layer-mix-row" data-layer="esriStreet">
+        <label><input type="checkbox" class="layer-check"> 🛣️ Rues détaillées</label>
+        <input type="range" class="layer-opacity" min="0" max="100" value="100">
+      </div>
+      <div class="layer-mix-row" data-layer="physical">
+        <label><input type="checkbox" class="layer-check"> 🌍 Relief coloré</label>
+        <input type="range" class="layer-opacity" min="0" max="100" value="100">
+      </div>
+      <div class="layer-mix-row" data-layer="natgeo">
+        <label><input type="checkbox" class="layer-check"> 📗 National Geographic</label>
+        <input type="range" class="layer-opacity" min="0" max="100" value="100">
+      </div>
       <div class="layer-mix-row" data-layer="street">
         <label><input type="checkbox" class="layer-check"> 📍 Plan (routes, sans photo)</label>
         <input type="range" class="layer-opacity" min="0" max="100" value="100">
       </div>
+      <div class="layer-mix-row" data-layer="opentopo">
+        <label><input type="checkbox" class="layer-check"> ⛰️ Topo (courbes de niveau)</label>
+        <input type="range" class="layer-opacity" min="0" max="100" value="100">
+      </div>
+      <div class="layer-mix-hint sans">Le gel du fond de carte peut échouer selon le calque et le navigateur — tu seras prévenu·e si ça ne fonctionne pas, sans casser le reste de l'appli.</div>
     </div>
 
     <div class="parcel-legend sans">
@@ -1025,7 +1050,12 @@ function defaultGrid(){
     layers: {
       satellite: { visible: true, opacity: 100 },
       hillshade: { visible: false, opacity: 60 },
-      street: { visible: false, opacity: 100 }
+      topo: { visible: false, opacity: 100 },
+      esriStreet: { visible: false, opacity: 100 },
+      physical: { visible: false, opacity: 100 },
+      natgeo: { visible: false, opacity: 100 },
+      street: { visible: false, opacity: 100 },
+      opentopo: { visible: false, opacity: 100 }
     },
     frozenImage: null,
     frozenBounds: null
@@ -1069,7 +1099,9 @@ STATE.gardens.forEach(g=>{
   }
   // Complète les champs ajoutés depuis (mélange de calques, fond figé) sans perdre les marqueurs existants
   const grid = STATE.data[g.id].grid;
-  if(!grid.layers) grid.layers = defaultGrid().layers;
+  if(!grid.layers) grid.layers = {};
+  const defLayers = defaultGrid().layers;
+  Object.keys(defLayers).forEach(k=>{ if(!grid.layers[k]) grid.layers[k] = defLayers[k]; });
   if(grid.frozenImage === undefined) grid.frozenImage = null;
   if(grid.frozenBounds === undefined) grid.frozenBounds = null;
 });
@@ -1596,11 +1628,34 @@ const LAYER_DEFS = {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Esri, relief ombré'
   },
+  topo: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri, topographique'
+  },
+  esriStreet: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri, rues détaillées'
+  },
+  physical: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri, relief coloré'
+  },
+  natgeo: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri, National Geographic'
+  },
   street: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '© OpenStreetMap contributors'
+  },
+  opentopo: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenTopoMap contributors'
   }
 };
+// Calques dont le gel (figer le fond) est confirmé fiable par test — tous les autres (OSM, OpenTopoMap)
+// peuvent ne pas s'inclure dans la capture selon le navigateur, sans faire planter le reste.
+const CORS_SAFE_LAYERS = ['satellite', 'hillshade', 'topo', 'esriStreet', 'physical', 'natgeo'];
 let mapLayers = {}; // { satellite: L.tileLayer, hillshade: ..., street: ... }
 let frozenOverlay = null;
 
@@ -1610,7 +1665,7 @@ function initLeafletMap(){
   leafletMap = L.map('leafletMap').setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
 
   Object.keys(LAYER_DEFS).forEach(key=>{
-    mapLayers[key] = L.tileLayer(LAYER_DEFS[key].url, { attribution: LAYER_DEFS[key].attribution, maxZoom: 19, crossOrigin: true });
+    mapLayers[key] = L.tileLayer(LAYER_DEFS[key].url, { attribution: LAYER_DEFS[key].attribution, maxZoom: 19 });
   });
 
   leafletMarkersLayer = L.layerGroup().addTo(leafletMap);
@@ -2088,7 +2143,7 @@ document.getElementById('printAllBtn').onclick = ()=>{
 };
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v1.2.0';
+const APP_VERSION = 'v1.3.1';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
