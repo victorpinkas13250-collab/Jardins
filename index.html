@@ -258,6 +258,18 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 .blur-tag{font-size:.65rem;background:#f6d7cb;color:var(--danger);padding:1px 6px;border-radius:8px;font-weight:600;}
 .layer-mix-row input[type="range"]{flex:1;}
 .freeze-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;}
+.saved-views-row{margin-top:14px;}
+.saved-views-gallery{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:10px;
+}
+.saved-view-thumb{
+  cursor:pointer;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:#fff;
+}
+.saved-view-thumb img{width:100%;height:80px;object-fit:cover;display:block;}
+.saved-view-thumb .sv-name{
+  font-family:inherit;font-size:.72rem;padding:5px 7px;color:var(--bark-soft);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 .leaflet-map-box{
   width:100%;height:420px;border-radius:3px;border:1px solid var(--line);
 }
@@ -476,6 +488,23 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
       <button class="btn btn-secondary sans" id="unfreezeBtn" style="display:none;">🔓 Dégeler / modifier le mélange</button>
     </div>
     <div id="leafletMap" class="leaflet-map-box"></div>
+
+    <div class="saved-views-row sans">
+      <button class="btn btn-secondary sans" id="saveViewBtn">📸 Enregistrer cette vue dans l'appli</button>
+    </div>
+    <div id="savedViewsGallery" class="saved-views-gallery"></div>
+  </div>
+
+  <!-- Vue enregistrée en grand -->
+  <div class="modal-overlay hidden" id="viewFullOverlay">
+    <div class="modal">
+      <h2 id="viewFullTitle"></h2>
+      <img id="viewFullImg" style="width:100%;border-radius:3px;border:1px solid var(--line);">
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="closeViewFullBtn">Fermer</button>
+        <button class="btn btn-secondary sans" id="deleteViewBtn" style="color:var(--danger);">🗑️ Supprimer cette vue</button>
+      </div>
+    </div>
   </div>
 
   <div class="section-title">Mes fiches du jardin <span class="count sans" id="plantCount"></span></div>
@@ -1056,7 +1085,8 @@ function defaultGrid(){
       opentopo: { visible: false, opacity: 100 }
     },
     frozenImage: null,
-    frozenBounds: null
+    frozenBounds: null,
+    savedViews: []
   };
 }
 function makeId(prefix){
@@ -1102,6 +1132,7 @@ STATE.gardens.forEach(g=>{
   Object.keys(defLayers).forEach(k=>{ if(!grid.layers[k]) grid.layers[k] = defLayers[k]; });
   if(grid.frozenImage === undefined) grid.frozenImage = null;
   if(grid.frozenBounds === undefined) grid.frozenBounds = null;
+  if(!Array.isArray(grid.savedViews)) grid.savedViews = [];
 });
 if(!STATE.data[STATE.currentGardenId]) STATE.currentGardenId = STATE.gardens[0].id;
 
@@ -1621,7 +1652,7 @@ const LAYER_DEFS = {
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Imagery © Esri, Maxar, Earthstar Geographics',
-    maxNativeZoom: 19
+    maxNativeZoom: 20
   },
   hillshade: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
@@ -1668,12 +1699,12 @@ let frozenOverlay = null;
 function initLeafletMap(){
   if(leafletMap) return; // déjà initialisée
   const gridData = currentGrid();
-  leafletMap = L.map('leafletMap').setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
+  leafletMap = L.map('leafletMap', { maxZoom: 22, minZoom: 2 }).setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
 
   Object.keys(LAYER_DEFS).forEach(key=>{
     mapLayers[key] = L.tileLayer(LAYER_DEFS[key].url, {
       attribution: LAYER_DEFS[key].attribution,
-      maxZoom: 19,
+      maxZoom: 22,
       maxNativeZoom: LAYER_DEFS[key].maxNativeZoom || 19
     });
   });
@@ -1792,6 +1823,67 @@ function unfreezeMapBackground(){
 document.getElementById('freezeBtn').onclick = freezeMapBackground;
 document.getElementById('unfreezeBtn').onclick = unfreezeMapBackground;
 
+/* ---------------- Vues de carte enregistrées dans l'appli ---------------- */
+async function saveCurrentView(){
+  if(!leafletMap || typeof html2canvas === 'undefined') return;
+  const name = prompt('Nom de cette vue (ex. "Vue d\'ensemble", "Coin des agrumes") :');
+  if(!name || !name.trim()) return;
+  const btn = document.getElementById('saveViewBtn');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Capture en cours...';
+  try{
+    const canvas = await html2canvas(document.getElementById('leafletMap'), { useCORS: true, allowTaint: false, logging: false });
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    const g = currentGrid();
+    g.savedViews.push({ id: makeId('v'), name: name.trim(), image: dataUrl, date: new Date().toISOString() });
+    persist();
+    renderSavedViews();
+  }catch(e){
+    alert("La capture a échoué (restriction de sécurité du navigateur sur certains calques). Essaie avec uniquement Satellite/Topographique/Rues/Plan actifs.");
+    console.error('saveCurrentView failed', e);
+  }
+  btn.disabled = false;
+  btn.textContent = original;
+}
+document.getElementById('saveViewBtn').onclick = saveCurrentView;
+
+function renderSavedViews(){
+  const g = currentGrid();
+  const gallery = document.getElementById('savedViewsGallery');
+  gallery.innerHTML = '';
+  (g.savedViews || []).forEach(v=>{
+    const thumb = document.createElement('div');
+    thumb.className = 'saved-view-thumb';
+    thumb.innerHTML = `<img src="${v.image}" alt=""><div class="sv-name">${escapeHtml(v.name)}</div>`;
+    thumb.onclick = ()=> openSavedView(v.id);
+    gallery.appendChild(thumb);
+  });
+}
+
+let currentViewId = null;
+function openSavedView(id){
+  const g = currentGrid();
+  const v = (g.savedViews || []).find(x=>x.id===id);
+  if(!v) return;
+  currentViewId = id;
+  document.getElementById('viewFullTitle').textContent = v.name;
+  document.getElementById('viewFullImg').src = v.image;
+  document.getElementById('viewFullOverlay').classList.remove('hidden');
+}
+document.getElementById('closeViewFullBtn').onclick = ()=> document.getElementById('viewFullOverlay').classList.add('hidden');
+document.getElementById('viewFullOverlay').onclick = (e)=>{
+  if(e.target.id==='viewFullOverlay') document.getElementById('viewFullOverlay').classList.add('hidden');
+};
+document.getElementById('deleteViewBtn').onclick = ()=>{
+  if(!currentViewId) return;
+  const g = currentGrid();
+  g.savedViews = (g.savedViews || []).filter(v=>v.id!==currentViewId);
+  persist();
+  document.getElementById('viewFullOverlay').classList.add('hidden');
+  renderSavedViews();
+};
+
 function statusColor(status){
   if(status==='now') return '#b9482f';
   if(status==='soon') return '#e08e45';
@@ -1806,6 +1898,7 @@ function renderParcelGrid(){
     leafletMap.setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
     applyFrozenState(); // réapplique le mélange de calques / l'état figé du jardin actif
   }
+  renderSavedViews();
   leafletMarkersLayer.clearLayers();
 
   const stillValidMarkers = [];
@@ -2153,7 +2246,7 @@ document.getElementById('printAllBtn').onclick = ()=>{
 };
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v1.3.4';
+const APP_VERSION = 'v1.4.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
