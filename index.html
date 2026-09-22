@@ -244,6 +244,14 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 }
 .map-search-result-item:hover{background:var(--sage-2);}
 .map-hint{color:var(--bark-soft);font-style:italic;}
+.layer-mix-panel{
+  border:1px solid var(--line);border-radius:3px;padding:10px 14px;margin-bottom:10px;
+  display:flex;flex-direction:column;gap:8px;background:#fff;
+}
+.layer-mix-row{display:flex;align-items:center;gap:10px;}
+.layer-mix-row label{display:flex;align-items:center;gap:6px;font-size:.85rem;flex:0 0 190px;}
+.layer-mix-row input[type="range"]{flex:1;}
+.freeze-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;}
 .leaflet-map-box{
   width:100%;height:420px;border-radius:3px;border:1px solid var(--line);
 }
@@ -417,13 +425,32 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
       <button class="btn btn-primary sans" id="mapSearchBtn">🔍 Chercher</button>
     </div>
     <div id="mapSearchResults" class="map-search-results"></div>
+
+    <div id="layerMixPanel" class="layer-mix-panel sans">
+      <div class="layer-mix-row" data-layer="satellite">
+        <label><input type="checkbox" class="layer-check" checked> 🛰️ Satellite</label>
+        <input type="range" class="layer-opacity" min="0" max="100" value="100">
+      </div>
+      <div class="layer-mix-row" data-layer="hillshade">
+        <label><input type="checkbox" class="layer-check"> 🏔️ Relief (sans végétation)</label>
+        <input type="range" class="layer-opacity" min="0" max="100" value="60">
+      </div>
+      <div class="layer-mix-row" data-layer="street">
+        <label><input type="checkbox" class="layer-check"> 📍 Plan (routes, sans photo)</label>
+        <input type="range" class="layer-opacity" min="0" max="100" value="100">
+      </div>
+    </div>
+
     <div class="parcel-legend sans">
       <span><i class="dot dot-now"></i> à récolter</span>
       <span><i class="dot dot-soon"></i> bientôt</span>
       <span><i class="dot dot-wait"></i> en attente</span>
       <span class="map-hint">Tape sur la carte pour placer un fruit</span>
-      <button class="garden-btn sans" id="toggleMarkersBtn" style="margin-left:auto;">👁️ Masquer les fruits</button>
-      <button class="garden-btn sans" id="toggleLayerBtn">🗺️ Hybride</button>
+    </div>
+    <div class="freeze-row sans">
+      <button class="garden-btn sans" id="toggleMarkersBtn">👁️ Masquer les fruits</button>
+      <button class="btn btn-primary sans" id="freezeBtn">🔒 Figer le fond de carte</button>
+      <button class="btn btn-secondary sans" id="unfreezeBtn" style="display:none;">🔓 Dégeler / modifier le mélange</button>
     </div>
     <div id="leafletMap" class="leaflet-map-box"></div>
   </div>
@@ -512,6 +539,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 /* ---------------- Fruit database (base climat national, décalée ensuite pour le climat méditerranéen) ---------------- */
 /* harvest: [moisDebut, moisFin] 1-12, peut chevaucher l'année (ex: [11,2]) */
@@ -992,7 +1020,16 @@ const MONTHS_LONG = ["janvier","février","mars","avril","mai","juin","juillet",
 /* ---------------- State : plusieurs jardins (lieux) ---------------- */
 function defaultGrid(){
   // Structure du plan : vue carte, centrée par défaut sur le sud de la France (Montpellier)
-  return { center: { lat: 43.6108, lng: 3.8767 }, zoom: 13, markers: [] };
+  return {
+    center: { lat: 43.6108, lng: 3.8767 }, zoom: 13, markers: [],
+    layers: {
+      satellite: { visible: true, opacity: 100 },
+      hillshade: { visible: false, opacity: 60 },
+      street: { visible: false, opacity: 100 }
+    },
+    frozenImage: null,
+    frozenBounds: null
+  };
 }
 function makeId(prefix){
   return prefix+Date.now()+Math.random().toString(36).slice(2,7);
@@ -1030,6 +1067,11 @@ STATE.gardens.forEach(g=>{
   if(!Array.isArray(STATE.data[g.id].grid.markers)){
     STATE.data[g.id].grid = defaultGrid();
   }
+  // Complète les champs ajoutés depuis (mélange de calques, fond figé) sans perdre les marqueurs existants
+  const grid = STATE.data[g.id].grid;
+  if(!grid.layers) grid.layers = defaultGrid().layers;
+  if(grid.frozenImage === undefined) grid.frozenImage = null;
+  if(grid.frozenBounds === undefined) grid.frozenBounds = null;
 });
 if(!STATE.data[STATE.currentGardenId]) STATE.currentGardenId = STATE.gardens[0].id;
 
@@ -1545,34 +1587,36 @@ document.getElementById('saveAddBtn').onclick = ()=>{
 let leafletMap = null;
 let leafletMarkersLayer = null;
 
-let satelliteLayer = null;
-let streetLayer = null;
-let hybridLabelsLayer = null;
-let currentBaseLayer = 'satellite';
+const LAYER_DEFS = {
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Imagery © Esri, Maxar, Earthstar Geographics'
+  },
+  hillshade: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Hillshade/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri, relief ombré'
+  },
+  street: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors'
+  }
+};
+let mapLayers = {}; // { satellite: L.tileLayer, hillshade: ..., street: ... }
+let frozenOverlay = null;
 
 function initLeafletMap(){
   if(leafletMap) return; // déjà initialisée
   const gridData = currentGrid();
   leafletMap = L.map('leafletMap').setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
 
-  satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Imagery © Esri, Maxar, Earthstar Geographics',
-    maxZoom: 19
+  Object.keys(LAYER_DEFS).forEach(key=>{
+    mapLayers[key] = L.tileLayer(LAYER_DEFS[key].url, { attribution: LAYER_DEFS[key].attribution, maxZoom: 19, crossOrigin: true });
   });
-  streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 19
-  });
-  // Calque de labels (routes, lieux) transparent, posé par-dessus le satellite pour la vue hybride
-  hybridLabelsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Esri',
-    maxZoom: 19
-  });
-  satelliteLayer.addTo(leafletMap);
 
   leafletMarkersLayer = L.layerGroup().addTo(leafletMap);
 
   leafletMap.on('click', (e)=>{
+    if(currentGrid().frozenImage) return; // fond figé : pas de placement tant qu'on n'a pas dégelé
     openAssignAtLatLng(e.latlng.lat, e.latlng.lng);
   });
 
@@ -1582,38 +1626,106 @@ function initLeafletMap(){
     g.zoom = leafletMap.getZoom();
     persist();
   });
+
+  applyLayerMixFromState();
+  applyFrozenState();
 }
 
-const BASE_LAYER_SEQUENCE = ['satellite', 'hybrid', 'street'];
-const BASE_LAYER_LABELS = {
-  satellite: '🛰️ Satellite',
-  hybrid: '🗺️ Hybride',
-  street: '📍 Plan'
-};
-function toggleBaseLayer(){
+/* Applique l'état des calques (coché/opacité) enregistré pour ce jardin */
+function applyLayerMixFromState(){
+  const g = currentGrid();
+  if(!g.layers) g.layers = defaultGrid().layers;
+  document.querySelectorAll('.layer-mix-row').forEach(row=>{
+    const key = row.dataset.layer;
+    const cfg = g.layers[key];
+    const checkbox = row.querySelector('.layer-check');
+    const slider = row.querySelector('.layer-opacity');
+    checkbox.checked = cfg.visible;
+    slider.value = cfg.opacity;
+    const layer = mapLayers[key];
+    if(!layer) return;
+    layer.setOpacity(cfg.opacity/100);
+    if(cfg.visible && !leafletMap.hasLayer(layer)) layer.addTo(leafletMap);
+    if(!cfg.visible && leafletMap.hasLayer(layer)) leafletMap.removeLayer(layer);
+  });
+}
+
+document.querySelectorAll('.layer-mix-row').forEach(row=>{
+  const key = row.dataset.layer;
+  row.querySelector('.layer-check').addEventListener('change', (e)=>{
+    const g = currentGrid();
+    g.layers[key].visible = e.target.checked;
+    persist();
+    const layer = mapLayers[key];
+    if(!layer || !leafletMap) return;
+    if(e.target.checked) layer.addTo(leafletMap); else leafletMap.removeLayer(layer);
+  });
+  row.querySelector('.layer-opacity').addEventListener('input', (e)=>{
+    const g = currentGrid();
+    g.layers[key].opacity = parseInt(e.target.value,10);
+    const layer = mapLayers[key];
+    if(layer) layer.setOpacity(g.layers[key].opacity/100);
+  });
+  row.querySelector('.layer-opacity').addEventListener('change', ()=> persist());
+});
+
+/* ---------------- Geler / dégeler le fond de carte ---------------- */
+function applyFrozenState(){
   if(!leafletMap) return;
-  const btn = document.getElementById('toggleLayerBtn');
+  const g = currentGrid();
+  const panel = document.getElementById('layerMixPanel');
+  const freezeBtn = document.getElementById('freezeBtn');
+  const unfreezeBtn = document.getElementById('unfreezeBtn');
 
-  // retire tout ce qui est actuellement affiché
-  leafletMap.removeLayer(satelliteLayer);
-  leafletMap.removeLayer(streetLayer);
-  leafletMap.removeLayer(hybridLabelsLayer);
+  if(frozenOverlay){ leafletMap.removeLayer(frozenOverlay); frozenOverlay = null; }
 
-  const idx = BASE_LAYER_SEQUENCE.indexOf(currentBaseLayer);
-  currentBaseLayer = BASE_LAYER_SEQUENCE[(idx + 1) % BASE_LAYER_SEQUENCE.length];
-
-  if(currentBaseLayer === 'satellite'){
-    satelliteLayer.addTo(leafletMap);
-  } else if(currentBaseLayer === 'hybrid'){
-    satelliteLayer.addTo(leafletMap);
-    hybridLabelsLayer.addTo(leafletMap);
+  if(g.frozenImage && g.frozenBounds){
+    Object.values(mapLayers).forEach(l=>{ if(leafletMap.hasLayer(l)) leafletMap.removeLayer(l); });
+    frozenOverlay = L.imageOverlay(g.frozenImage, g.frozenBounds).addTo(leafletMap);
+    panel.style.display = 'none';
+    freezeBtn.style.display = 'none';
+    unfreezeBtn.style.display = 'inline-block';
   } else {
-    streetLayer.addTo(leafletMap);
+    panel.style.display = 'flex';
+    freezeBtn.style.display = 'inline-block';
+    unfreezeBtn.style.display = 'none';
+    applyLayerMixFromState();
   }
-  // Le bouton affiche la PROCHAINE vue (celle sur laquelle on va basculer au prochain tap)
-  const nextIdx = (BASE_LAYER_SEQUENCE.indexOf(currentBaseLayer) + 1) % BASE_LAYER_SEQUENCE.length;
-  btn.textContent = BASE_LAYER_LABELS[BASE_LAYER_SEQUENCE[nextIdx]];
 }
+
+async function freezeMapBackground(){
+  if(!leafletMap || typeof html2canvas === 'undefined') return;
+  const btn = document.getElementById('freezeBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Capture en cours...';
+  try{
+    const canvas = await html2canvas(document.getElementById('leafletMap'), { useCORS: true, allowTaint: false, logging: false });
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+    const bounds = leafletMap.getBounds();
+    const g = currentGrid();
+    g.frozenImage = dataUrl;
+    g.frozenBounds = [[bounds.getSouth(), bounds.getWest()], [bounds.getNorth(), bounds.getEast()]];
+    persist();
+    applyFrozenState();
+  }catch(e){
+    alert("La capture a échoué — probablement une restriction de sécurité du navigateur sur la couche \"Plan\" (OpenStreetMap). Décoche \"Plan\" pour ne garder que Satellite et/ou Relief, puis réessaie.");
+    console.error('freeze failed', e);
+  }
+  btn.disabled = false;
+  btn.textContent = originalText;
+}
+
+function unfreezeMapBackground(){
+  const g = currentGrid();
+  g.frozenImage = null;
+  g.frozenBounds = null;
+  persist();
+  applyFrozenState();
+}
+
+document.getElementById('freezeBtn').onclick = freezeMapBackground;
+document.getElementById('unfreezeBtn').onclick = unfreezeMapBackground;
 
 function statusColor(status){
   if(status==='now') return '#b9482f';
@@ -1627,6 +1739,7 @@ function renderParcelGrid(){
     initLeafletMap();
   } else {
     leafletMap.setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
+    applyFrozenState(); // réapplique le mélange de calques / l'état figé du jardin actif
   }
   leafletMarkersLayer.clearLayers();
 
@@ -1751,7 +1864,6 @@ document.getElementById('toggleMarkersBtn').onclick = ()=>{
   }
 };
 
-document.getElementById('toggleLayerBtn').onclick = toggleBaseLayer;
 
 /* ---------------- Detail modal ---------------- */
 const detailOverlay = document.getElementById('detailOverlay');
@@ -1976,7 +2088,7 @@ document.getElementById('printAllBtn').onclick = ()=>{
 };
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v1.1.0';
+const APP_VERSION = 'v1.2.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
