@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Carnet du Verger</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+:root{
+  --sage:#eef1e6;
+  --sage-2:#e2e7d4;
+  --olive:#4a5d32;
+  --olive-dark:#33421f;
+  --bark:#2b2a24;
+  --bark-soft:#5c5848;
+  --fig:#7b4b94;
+  --sun:#e08e45;
+  --sun-soft:#f4c98a;
+  --cream:#fbfaf5;
+  --line:#d8dcc7;
+  --danger:#b9482f;
+  font-size:16px;
+}
+:root[data-theme="dark"], :root:not([data-theme="light"]){
+}
+@media (prefers-color-scheme: light){}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--sage);color:var(--bark);}
+body{
+  font-family: "Iowan Old Style","Palatino Linotype",Georgia,"Noto Serif",serif;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.sans{font-family: "Avenir Next","Segoe UI",-apple-system,Helvetica,Arial,sans-serif;}
+a{color:inherit;}
+
+/* ---------- layout shell ---------- */
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px 80px;}
+header.top{
+  padding:36px 20px 22px;
+  border-bottom:2px solid var(--olive);
+  background:linear-gradient(180deg, var(--sage-2), var(--sage));
+}
+header.top .inner{max-width:1100px;margin:0 auto;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+h1{
+  font-size:2.1rem;
+  margin:0;
+  font-weight:600;
+  letter-spacing:.2px;
+  color:var(--olive-dark);
+}
+h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
+.date-badge{
+  font-family:inherit;
+  font-size:.95rem;
+  color:var(--bark-soft);
+  border:1px solid var(--olive);
+  border-radius:2px;
+  padding:5px 12px;
+  background:var(--cream);
+  white-space:nowrap;
+}
+
+/* ---------- today panel ---------- */
+.today-panel{
+  margin-top:26px;
+  border:1px solid var(--line);
+  background:var(--cream);
+  border-radius:3px;
+  overflow:hidden;
+}
+.today-panel h2{
+  margin:0;
+  padding:14px 20px;
+  font-size:1.05rem;
+  font-weight:600;
+  background:var(--olive);
+  color:var(--sage);
+  font-family:inherit;
+}
+.today-list{padding:16px 20px 20px;display:flex;flex-direction:column;gap:10px;}
+.today-empty{padding:20px;color:var(--bark-soft);font-style:italic;}
+.today-row{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;border-radius:3px;
+  border-left:4px solid var(--sun);
+  background:var(--sun-soft);
+}
+.today-row.urgent{border-left-color:var(--danger);background:#f6d7cb;}
+.today-row .emoji{font-size:1.3rem;}
+.today-row .txt{flex:1;font-size:.95rem;}
+.today-row .txt b{font-weight:600;}
+.today-row .when{font-size:.82rem;color:var(--bark-soft);font-family:inherit;}
+
+/* ---------- grid of plants ---------- */
+.section-title{
+  margin:40px 0 16px;
+  font-size:1.3rem;
+  font-weight:600;
+  color:var(--olive-dark);
+  display:flex;align-items:center;gap:10px;
+}
+.section-title .count{
+  font-family:inherit;font-size:.85rem;color:var(--bark-soft);font-weight:400;
+}
+.plant-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:16px;
+}
+.type-folder{margin-bottom:14px;}
+.type-folder-header{
+  display:flex;align-items:center;gap:9px;cursor:pointer;
+  padding:10px 14px;background:var(--sage-2);border-radius:3px;margin-bottom:10px;
+  user-select:none;
+}
+.type-folder-header:hover{background:var(--line);}
+.chevron{
+  font-size:.8rem;color:var(--olive-dark);transition:transform .12s ease;display:inline-block;
+}
+.chevron.open{transform:rotate(90deg);}
+.tf-emoji{font-size:1.15rem;}
+.tf-name{font-weight:600;color:var(--olive-dark);}
+.tf-count{color:var(--bark-soft);}
+.type-folder-body{margin-bottom:4px;}
+.plant-card{
+  background:var(--cream);
+  border:1px solid var(--line);
+  border-top:5px solid var(--olive);
+  padding:16px 16px 14px;
+  border-radius:2px;
+  cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease;
+  position:relative;
+}
+.card-photo{
+  width:calc(100% + 32px);margin:-16px -16px 12px;
+  height:120px;object-fit:cover;display:block;
+}
+.plant-card:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(43,42,36,.1);}
+.plant-card.status-now{border-top-color:var(--danger);}
+.plant-card.status-soon{border-top-color:var(--sun);}
+.plant-card.status-wait{border-top-color:var(--olive);}
+.plant-card.status-done{border-top-color:var(--line);opacity:.7;}
+.plant-card h3{margin:0 0 4px;font-size:1.15rem;font-weight:600;}
+.plant-card .variety{font-size:.85rem;color:var(--bark-soft);font-style:italic;margin-bottom:10px;}
+.status-chip{
+  display:inline-block;font-family:inherit;font-size:.78rem;
+  padding:3px 9px;border-radius:20px;margin-bottom:8px;
+}
+.status-now .status-chip{background:var(--danger);color:#fff;}
+.status-soon .status-chip{background:var(--sun);color:#fff;}
+.status-wait .status-chip{background:var(--sage-2);color:var(--olive-dark);}
+.status-done .status-chip{background:var(--line);color:var(--bark-soft);}
+.plant-card .loc{font-family:inherit;font-size:.82rem;color:var(--bark-soft);}
+.plant-card .care-preview{
+  font-family:inherit;font-size:.78rem;color:var(--bark-soft);
+  margin-top:8px;padding-top:8px;border-top:1px solid var(--line);
+  line-height:1.4;
+}
+.plant-card .del-btn{
+  position:absolute;top:10px;right:10px;
+  background:none;border:none;color:var(--bark-soft);
+  font-size:1.1rem;cursor:pointer;line-height:1;padding:2px 6px;
+}
+.plant-card .del-btn:hover{color:var(--danger);}
+
+.empty-garden{
+  padding:50px 20px;text-align:center;color:var(--bark-soft);
+  border:1px dashed var(--line);border-radius:3px;background:var(--cream);
+}
+
+/* ---------- add button + form ---------- */
+.fab-row{margin-top:34px;display:flex;gap:12px;flex-wrap:wrap;}
+.add-fab{
+  flex:1;min-width:220px;
+  padding:14px;
+  font-family:inherit;font-size:1rem;font-weight:600;
+  background:var(--olive);color:var(--sage);
+  border:none;border-radius:3px;cursor:pointer;
+  letter-spacing:.2px;
+}
+.add-fab:hover{background:var(--olive-dark);}
+.add-fab.secondary-fab{background:var(--fig);color:#fff;}
+.add-fab.secondary-fab:hover{background:#5f3a72;}
+
+.climate-note{
+  margin-top:14px;font-family:inherit;font-size:.82rem;
+  color:var(--olive-dark);background:var(--sage-2);
+  border-radius:3px;padding:8px 14px;display:inline-block;
+}
+
+.garden-switch-row{margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+#gardenSelect{
+  font-family:inherit;font-size:.95rem;font-weight:600;
+  padding:8px 12px;border:1px solid var(--olive);border-radius:3px;
+  background:var(--cream);color:var(--olive-dark);flex:1;min-width:140px;max-width:260px;
+}
+.garden-btn{
+  font-family:inherit;font-size:.85rem;padding:7px 10px;
+  border:1px solid var(--line);border-radius:3px;background:var(--cream);
+  color:var(--bark-soft);cursor:pointer;
+}
+.garden-btn:hover{background:var(--sage-2);}
+.garden-btn.danger-btn:hover{background:#f6d7cb;color:var(--danger);border-color:var(--danger);}
+
+/* ---------- parcel plan ---------- */
+.parcel-panel{
+  background:var(--cream);border:1px solid var(--line);border-radius:3px;padding:16px;
+}
+.parcel-bg-row{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;
+  font-size:.78rem;color:var(--bark-soft);
+}
+.parcel-bg-hint{flex-basis:100%;}
+.parcel-scroll.has-bg{
+  background-size:cover;background-position:center;border-radius:3px;
+}
+.parcel-grid.has-bg-grid .parcel-cell{
+  width:auto;height:auto;min-width:0;min-height:0;
+  background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.55);border-radius:0;
+}
+.parcel-grid.has-bg-grid .parcel-cell.status-now{background:rgba(185,72,47,.55);border-color:var(--danger);}
+.parcel-grid.has-bg-grid .parcel-cell.status-soon{background:rgba(224,142,69,.55);border-color:var(--sun);}
+.parcel-grid.has-bg-grid .parcel-cell.status-wait{background:rgba(74,93,50,.35);border-color:var(--olive);}
+.map-search-row{display:flex;gap:8px;margin-bottom:8px;}
+.map-search-row input{
+  flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:3px;
+  font-family:inherit;font-size:.92rem;
+}
+.map-search-results{
+  display:flex;flex-direction:column;gap:4px;margin-bottom:10px;max-height:180px;overflow-y:auto;
+}
+.map-search-result-item{
+  padding:8px 12px;border:1px solid var(--line);border-radius:3px;
+  font-size:.85rem;cursor:pointer;background:#fff;
+}
+.map-search-result-item:hover{background:var(--sage-2);}
+.map-hint{color:var(--bark-soft);font-style:italic;}
+.leaflet-map-box{
+  width:100%;height:420px;border-radius:3px;border:1px solid var(--line);
+}
+.marker-pin-label{
+  font-size:.65rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.8);color:#fff;
+  white-space:nowrap;
+}
+.leaflet-popup-content b{color:var(--olive-dark);}
+.map-popup-btn{
+  display:inline-block;margin-top:6px;padding:4px 10px;background:var(--olive);color:#fff;
+  border-radius:3px;font-size:.8rem;text-decoration:none;cursor:pointer;border:none;font-family:inherit;
+}
+.parcel-legend{
+  display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--bark-soft);margin-bottom:12px;
+}
+.parcel-legend span{display:flex;align-items:center;gap:5px;}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+.dot-now{background:var(--danger);}
+.dot-soon{background:var(--sun);}
+.dot-wait{background:var(--olive);}
+.dot-empty{background:var(--line);border:1px solid var(--bark-soft);}
+.parcel-scroll{overflow-x:auto;padding-bottom:4px;}
+.parcel-grid{
+  display:grid;gap:4px;width:max-content;
+}
+.parcel-cell{
+  width:46px;height:46px;border-radius:3px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:1.2rem;cursor:pointer;position:relative;overflow:hidden;
+  background:var(--sage-2);border:2px dashed var(--line);
+  transition:transform .1s ease;
+}
+.cell-emoji{font-size:1.1rem;line-height:1;}
+.cell-label{
+  font-family:inherit;font-size:.48rem;line-height:1.1;color:var(--bark-soft);
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  padding:0 2px;
+}
+.parcel-grid.has-bg-grid .cell-label{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+.parcel-cell:hover{transform:scale(1.06);}
+.parcel-cell.filled{border-style:solid;}
+.parcel-cell.status-now{border-color:var(--danger);background:#f6d7cb;}
+.parcel-cell.status-soon{border-color:var(--sun);background:var(--sun-soft);}
+.parcel-cell.status-wait{border-color:var(--olive);background:var(--sage-2);}
+.parcel-resize{
+  margin-top:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  font-size:.82rem;color:var(--bark-soft);
+}
+.parcel-resize label{display:flex;align-items:center;gap:6px;}
+.parcel-resize input{
+  padding:5px 6px;border:1px solid var(--line);border-radius:3px;font-family:inherit;
+}
+.assign-list{max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.assign-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  border:1px solid var(--line);border-radius:3px;cursor:pointer;background:#fff;
+}
+.assign-item:hover{background:var(--sage-2);}
+.assign-item .emoji{font-size:1.2rem;}
+.assign-empty{color:var(--bark-soft);font-style:italic;font-size:.9rem;padding:10px 0;}
+
+.edit-btn{
+  position:absolute;top:10px;right:34px;
+  background:none;border:none;color:var(--bark-soft);
+  font-size:.95rem;cursor:pointer;line-height:1;padding:2px 6px;
+}
+.edit-btn:hover{color:var(--fig);}
+
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(43,42,36,.55);
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:30px 16px;overflow-y:auto;z-index:50;
+}
+.modal-overlay.hidden{display:none;}
+.modal{
+  background:var(--cream);max-width:520px;width:100%;
+  border-radius:4px;padding:26px 26px 22px;
+  border-top:6px solid var(--fig);
+}
+.modal h2{margin:0 0 18px;font-size:1.3rem;color:var(--olive-dark);}
+.field{margin-bottom:14px;}
+.field label{
+  display:block;font-family:inherit;font-size:.82rem;color:var(--bark-soft);
+  margin-bottom:5px;
+}
+.field input, .field select, .field textarea{
+  width:100%;padding:9px 10px;font-family:inherit;font-size:.95rem;
+  border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--bark);
+}
+.field textarea{resize:vertical;min-height:60px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.hint{font-family:inherit;font-size:.78rem;color:var(--fig);margin-top:4px;min-height:14px;}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
+.btn{
+  font-family:inherit;font-size:.92rem;font-weight:600;
+  padding:10px 16px;border-radius:3px;border:none;cursor:pointer;
+}
+.btn-primary{background:var(--olive);color:var(--sage);flex:1;}
+.btn-primary:hover{background:var(--olive-dark);}
+.btn-secondary{background:none;color:var(--bark-soft);border:1px solid var(--line);}
+.btn-secondary:hover{background:var(--sage-2);}
+
+/* detail modal */
+.detail-body{font-size:.95rem;}
+.detail-photo{width:100%;max-height:260px;object-fit:cover;border-radius:3px;margin-bottom:14px;display:block;}
+.detail-body .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);}
+.detail-body .row:last-child{border-bottom:none;}
+.detail-body .row span:first-child{color:var(--bark-soft);font-family:inherit;font-size:.85rem;}
+.detail-body .tip-box{
+  margin-top:14px;padding:12px 14px;background:var(--sage-2);border-radius:3px;font-size:.9rem;
+}
+.detail-body .tip-box b{display:block;font-family:inherit;font-size:.78rem;color:var(--olive-dark);margin-bottom:4px;}
+.tech-sheet{
+  margin-top:16px;border:1px solid var(--olive);border-radius:3px;overflow:hidden;
+}
+.tech-sheet-title{
+  background:var(--olive);color:var(--sage);font-size:.78rem;font-weight:600;
+  padding:7px 14px;letter-spacing:.2px;
+}
+.tech-row{
+  display:flex;padding:9px 14px;border-bottom:1px solid var(--line);font-size:.88rem;gap:14px;
+}
+.tech-row:last-child{border-bottom:none;}
+.tech-label{
+  font-family:inherit;font-size:.75rem;color:var(--olive-dark);font-weight:600;
+  flex:0 0 130px;padding-top:1px;
+}
+
+footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.78rem;padding:30px 20px 10px;}
+
+@media (max-width:560px){
+  .two-col{grid-template-columns:1fr;}
+  h1{font-size:1.6rem;}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="inner">
+    <h1>Le Carnet <span class="leaf">du Verger</span></h1>
+    <div class="date-badge sans" id="todayBadge"></div>
+  </div>
+  <div class="inner garden-switch-row">
+    <select id="gardenSelect" class="sans"></select>
+    <button class="garden-btn sans" id="renameGardenBtn" title="Renommer ce jardin">✏️</button>
+    <button class="garden-btn sans" id="newGardenBtn" title="Nouveau jardin">＋ Jardin</button>
+    <button class="garden-btn sans danger-btn" id="deleteGardenBtn" title="Supprimer ce jardin">🗑️</button>
+  </div>
+  <div class="inner garden-switch-row">
+    <button class="garden-btn sans" id="exportGardenBtn" title="Exporter ce jardin pour le transférer">📤 Exporter ce jardin</button>
+    <input type="file" id="importGardenInput" accept="application/json,.json" style="display:none;">
+    <button class="garden-btn sans" id="importGardenBtn" title="Importer un jardin reçu">📥 Importer un jardin</button>
+  </div>
+  <div class="inner">
+    <span class="climate-note">🌞 Climat méditerranéen (sud de la France) : dates de récolte avancées d'environ 2 semaines par rapport à la moyenne nationale.</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="today-panel">
+    <h2 class="sans">À surveiller cette semaine</h2>
+    <div class="today-list" id="todayList"></div>
+  </div>
+
+  <div class="section-title">Plan de la parcelle</div>
+  <div class="parcel-panel">
+    <div class="map-search-row sans">
+      <input type="text" id="mapSearchInput" placeholder="Chercher une adresse, une ville, un lieu-dit..." onkeydown="if(event.key==='Enter'){mapSearchPlace();}">
+      <button class="btn btn-primary sans" id="mapSearchBtn">🔍 Chercher</button>
+    </div>
+    <div id="mapSearchResults" class="map-search-results"></div>
+    <div class="parcel-legend sans">
+      <span><i class="dot dot-now"></i> à récolter</span>
+      <span><i class="dot dot-soon"></i> bientôt</span>
+      <span><i class="dot dot-wait"></i> en attente</span>
+      <span class="map-hint">Tape sur la carte pour placer un fruit</span>
+    </div>
+    <div id="leafletMap" class="leaflet-map-box"></div>
+  </div>
+
+  <div class="section-title">Mes fiches du jardin <span class="count sans" id="plantCount"></span></div>
+  <div id="gardenGrid" class="plant-grid"></div>
+  <div id="emptyState" class="empty-garden" style="display:none;">
+    Le jardin est encore vide. Créez votre première fiche pour commencer à suivre les récoltes.
+  </div>
+
+  <div class="fab-row">
+    <button class="add-fab" id="openAddBtn">+ Créer une fiche</button>
+    <button class="add-fab secondary-fab sans" id="printAllBtn">📥 Télécharger le carnet PDF</button>
+  </div>
+
+  <footer>Vos données restent sur cet appareil, dans ce navigateur.</footer>
+</div>
+
+<!-- Add / edit plant modal -->
+<div class="modal-overlay hidden" id="addOverlay">
+  <div class="modal">
+    <h2 id="addModalTitle">Nouvelle fiche</h2>
+    <div class="field">
+      <label for="fruitType">Type de fruit</label>
+      <select id="fruitType"></select>
+    </div>
+    <div class="field">
+      <label for="customName">Nom de ce fruit précis (optionnel — ex. "Figuier 1", "Figuier du fond")</label>
+      <input type="text" id="customName" placeholder="Laisse vide pour juste \"Figue\", \"Figue 2\"...">
+    </div>
+    <div class="two-col">
+      <div class="field">
+        <label for="variety">Variété (optionnel)</label>
+        <input type="text" id="variety" placeholder="ex. Reine des Reinettes">
+      </div>
+      <div class="field">
+        <label for="location">Emplacement</label>
+        <input type="text" id="location" placeholder="ex. fond du jardin">
+      </div>
+    </div>
+    <div class="field">
+      <label for="plantedDate">Date de plantation (optionnel)</label>
+      <input type="date" id="plantedDate">
+    </div>
+    <div class="field">
+      <label for="notes">Notes</label>
+      <textarea id="notes" placeholder="Remarques personnelles..."></textarea>
+    </div>
+    <div class="field">
+      <label for="photoInput">Photo de l'arbre / du plant (optionnel)</label>
+      <input type="file" id="photoInput" accept="image/*" capture="environment">
+      <img id="photoPreview" style="display:none;max-width:100%;margin-top:8px;border-radius:3px;border:1px solid var(--line);">
+      <button type="button" class="btn btn-secondary sans" id="removePhotoBtn" style="display:none;margin-top:8px;">Supprimer la photo</button>
+    </div>
+    <div class="hint sans" id="typeHint"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancelAddBtn">Annuler</button>
+      <button class="btn btn-primary" id="saveAddBtn">Créer la fiche</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="modal-overlay hidden" id="detailOverlay">
+  <div class="modal">
+    <h2 id="detailTitle"></h2>
+    <div class="detail-body" id="detailBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="closeDetailBtn">Fermer</button>
+      <button class="btn btn-secondary sans" id="editFromDetailBtn">✏️ Modifier</button>
+      <button class="btn btn-primary sans" id="printOneBtn">📥 Télécharger en PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Assignation d'une case du plan de parcelle -->
+<div class="modal-overlay hidden" id="assignOverlay">
+  <div class="modal">
+    <h2>Placer un fruit sur cette case</h2>
+    <div id="assignList" class="assign-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancelAssignBtn">Annuler</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+/* ---------------- Fruit database (base climat national, décalée ensuite pour le climat méditerranéen) ---------------- */
+/* harvest: [moisDebut, moisFin] 1-12, peut chevaucher l'année (ex: [11,2]) */
+/* prune: mois de taille conseillée, ou null */
+/* care: entretien courant (exposition / arrosage / sol) */
+const FRUIT_DB = {
+  "Pomme": { emoji:"🍎", cat:"fruit", harvest:[9,11], prune:[12,2],
+    sol:"Argilo-calcaire à limoneux, drainé, pH 6-7,5",
+    arrosage:"15-20 L/semaine en été sur sujet de moins de 3 ans ; réduire ensuite",
+    fertilisation:"Compost ou fumier décomposé fin d'hiver ; apport potassique à la nouaison",
+    maladies:"Tavelure, oïdium, puceron cendré, carpocapse",
+    taille:"Sécateur désinfecté à l'alcool à 70° entre chaque arbre (contre le feu bactérien). En hiver hors gel (déc.-fév.) : supprimer bois mort, gourmands verticaux et branches qui se croisent. Raccourcir les rameaux d'un an au-dessus du 3e-4e bourgeon en partant de la base, coupe nette en biseau à 45°, 2-3 mm au-dessus d'un œil orienté vers l'extérieur pour ouvrir l'arbre à la lumière.",
+    tip:"Récoltez quand le fruit se détache facilement d'une torsion douce et que les pépins sont bruns." },
+  "Poire": { emoji:"🍐", cat:"fruit", harvest:[8,10], prune:[12,2],
+    sol:"Frais, profond et drainé, pH 6-7,5",
+    arrosage:"Arrosage régulier les 2 premières années, puis selon sécheresse",
+    fertilisation:"Compost fin d'hiver ; éviter l'excès d'azote qui favorise le feu bactérien",
+    maladies:"Feu bactérien, tavelure, psylle du poirier",
+    taille:"Sécateur désinfecté à l'alcool à 70° entre chaque arbre (contre le feu bactérien). En hiver hors gel (déc.-fév.) : supprimer bois mort, gourmands verticaux et branches qui se croisent. Raccourcir les rameaux d'un an au-dessus du 3e-4e bourgeon en partant de la base, coupe nette en biseau à 45°, 2-3 mm au-dessus d'un œil orienté vers l'extérieur pour ouvrir l'arbre à la lumière. Sur poirier, éclaircir davantage le centre : plus sensible à l'humidité stagnante que le pommier.",
+    tip:"Cueillez un peu avant complète maturité, la poire mûrit bien après récolte." },
+  "Pêche": { emoji:"🍑", cat:"fruit", harvest:[7,9], prune:[3,4],
+    sol:"Léger, drainé, peu calcaire, pH 6-7",
+    arrosage:"Régulier en période de grossissement, éviter l'excès d'humidité stagnante",
+    fertilisation:"Compost fin d'hiver ; potassium à la formation du fruit",
+    maladies:"Cloque du pêcher, oïdium, puceron vert, moniliose",
+    taille:"Le pêcher fructifie sur le bois de l'année précédente : chaque année, après récolte, rabattre les rameaux ayant fructifié à 2-3 yeux d'un rameau de remplacement déjà formé. Coupe franche au sécateur, jamais à la scie sur du bois vivant fin. Éviter toute taille en période de gel ou de pluie (risque de chancre et de gommose) ; désinfecter la lame entre chaque arbre.",
+    tip:"Le fruit doit céder sous une légère pression et se détacher sans forcer." },
+  "Abricot": { emoji:"🍑", cat:"fruit", harvest:[6,8], prune:[7,8],
+    sol:"Léger et bien drainé, calcaire toléré, pH 6,5-8",
+    arrosage:"Modéré, surtout à la formation du fruit ; sensible à l'excès d'eau",
+    fertilisation:"Compost léger fin d'hiver",
+    maladies:"Moniliose, criblure, puceron",
+    taille:"Tailler exclusivement en été, juste après récolte, jamais en hiver (grande sensibilité au chancre et à la gommose sur plaie hivernale). Supprimer bois mort et rameaux mal placés, raccourcir d'un tiers les charpentières trop longues, coupe au-dessus d'un œil externe, plaies de plus de 2 cm mastiquées.",
+    tip:"Récoltez quand la couleur est uniforme et le fruit légèrement souple." },
+  "Prune": { emoji:"🟣", cat:"fruit", harvest:[7,9], prune:[7,8],
+    sol:"Profond, frais, tolère l'argile, pH 6-7,5",
+    arrosage:"Régulier en période de grossissement du fruit",
+    fertilisation:"Compost fin d'hiver",
+    maladies:"Puceron farineux, moniliose, cloque du prunier",
+    taille:"Taille d'été après récolte uniquement : le prunier cicatrise mal en hiver (gommose). Aérer le centre, supprimer les branches qui se croisent et les gourmands verticaux, coupe nette au sécateur juste au-dessus d'un œil.",
+    tip:"La prune mûre se détache facilement et présente une fine pellicule cireuse (pruine)." },
+  "Cerise": { emoji:"🍒", cat:"fruit", harvest:[5,7], prune:[7,8],
+    sol:"Drainé, plutôt calcaire toléré, pH 6-7,5",
+    arrosage:"Régulier, sans excès (risque d'éclatement des fruits à l'approche de la récolte)",
+    fertilisation:"Compost fin d'hiver",
+    maladies:"Mouche de la cerise (Drosophila suzukii), moniliose, puceron noir",
+    taille:"Taille minimale et exclusivement en été, juste après récolte : le cerisier cicatrise très mal en hiver. Se limiter à retirer bois mort, branches mal orientées et gourmands, coupe franche au ras d'un œil, jamais de chicot.",
+    tip:"Coupez avec la queue plutôt que d'arracher, pour protéger le bourgeon suivant." },
+  "Figue": { emoji:"🌱", cat:"fruit", harvest:[8,10], prune:[2,3],
+    sol:"Pauvre à moyen, drainé, tolère le calcaire, pH 6-8",
+    arrosage:"Faible une fois installé, résiste bien à la sécheresse",
+    fertilisation:"Peu exigeant, compost léger en fin d'hiver",
+    maladies:"Psylle du figuier, cératite (mouche méditerranéenne des fruits)",
+    taille:"Taille légère en fin d'hiver, hors gel : aérer le centre, supprimer bois mort et rameaux qui se croisent, coupe au-dessus d'un œil. Porter des gants : la sève laiteuse est irritante pour la peau.",
+    tip:"La figue mûre s'incline vers le bas et sa peau se fendille légèrement." },
+  "Raisin de table": { emoji:"🍇", cat:"fruit", harvest:[8,10], prune:[1,3],
+    sol:"Drainé, plutôt pauvre et caillouteux, pH 6,5-8",
+    arrosage:"Modéré, réduit à l'approche de la véraison pour concentrer les sucres",
+    fertilisation:"Compost léger en sortie d'hiver",
+    maladies:"Mildiou, oïdium, black-rot",
+    taille:"Taille Guyot ou en cordon selon la conduite : en hiver, hors période de gel et avant la montée de sève (pour éviter les 'pleurs'), garder 1 à 2 astes (longs bois de 6-8 yeux) et 1-2 coursons de renouvellement (2 yeux) par pied, supprimer tout le reste. En été, ébourgeonner et effeuiller autour des grappes pour l'aération.",
+    tip:"La couleur seule ne suffit pas : goûtez régulièrement dès mi-août, le sucre n'évolue plus après la coupe." },
+  "Raisin de cuve": { emoji:"🍇", cat:"fruit", harvest:[9,10], prune:[1,3],
+    sol:"Drainé, pauvre, souvent caillouteux, pH 6,5-8",
+    arrosage:"Faible, la vigne de cuve est volontairement stressée en eau",
+    fertilisation:"Fumure raisonnée, apport très limité",
+    maladies:"Mildiou, oïdium, black-rot",
+    taille:"Taille Guyot simple ou double, réglementée par cépage/appellation : rabattre à 1-2 coursons de renouvellement (2 yeux) et un long bois de 6-10 yeux selon le rendement visé, taille hivernale hors gel, jamais en période de pleurs.",
+    tip:"La date exacte varie beaucoup selon le cépage et la région — fiez-vous au goût et à la couleur des pépins (bruns) plutôt qu'au calendrier." },
+  "Citron caviar": { emoji:"🍋", cat:"fruit", harvest:[10,1], prune:[3,4],
+    sol:"Drainé, légèrement acide, pH 5,5-6,5",
+    arrosage:"Régulier sans excès, sol jamais détrempé",
+    fertilisation:"Engrais spécial agrumes mars-septembre, dose réduite",
+    maladies:"Cochenille, puceron",
+    taille:"Taille légère d'entretien en fin d'hiver (mars), après les derniers risques de gel : aérer le centre de la couronne, supprimer les rameaux morts et les gourmands qui partent du porte-greffe sous le point de greffe (les repérer dès leur apparition et les arracher à la base). Coupe au sécateur désinfecté, juste au-dessus d'un œil orienté vers l'extérieur. Bois fin et cassant : couper franc, sans torsion, pour éviter de fendre l'écorce.",
+    tip:"La peau prend une teinte plus sombre et cède légèrement sous le doigt ; les billes doivent se détacher facilement à la coupe." },
+  "Kumquat": { emoji:"🍊", cat:"fruit", harvest:[11,2], prune:[3,4],
+    sol:"Drainé, terreau agrumes en pot, pH 6-6,5",
+    arrosage:"Régulier, drainage impératif en pot",
+    fertilisation:"Engrais spécial agrumes mars-septembre",
+    maladies:"Cochenille, araignée rouge en intérieur",
+    taille:"Taille légère d'entretien en fin d'hiver (mars), après les derniers risques de gel : aérer le centre de la couronne, supprimer les rameaux morts et les gourmands qui partent du porte-greffe sous le point de greffe (les repérer dès leur apparition et les arracher à la base). Coupe au sécateur désinfecté, juste au-dessus d'un œil orienté vers l'extérieur. En pot, tailler aussi pour garder un port compact et équilibré.",
+    tip:"Se mange peau comprise : cueillez orange vif et encore ferme." },
+  "Yuzu": { emoji:"🍋", cat:"fruit", harvest:[10,12], prune:[3,4],
+    sol:"Drainé, légèrement acide, pH 6-6,5",
+    arrosage:"Régulier, plus rustique que les autres agrumes au manque d'eau ponctuel",
+    fertilisation:"Engrais spécial agrumes mars-septembre",
+    maladies:"Cochenille, puceron",
+    taille:"Taille légère d'entretien en fin d'hiver (mars), après les derniers risques de gel : aérer le centre de la couronne, supprimer les rameaux morts et les gourmands qui partent du porte-greffe sous le point de greffe (les repérer dès leur apparition et les arracher à la base). Coupe au sécateur désinfecté, juste au-dessus d'un œil orienté vers l'extérieur. Attention aux épines longues sur le bois âgé, porter des gants.",
+    tip:"Récoltez dès que la peau bosselée passe du vert au jaune, avant qu'elle ne se dessèche." },
+  "Combava": { emoji:"🍋", cat:"fruit", harvest:[10,12], prune:[3,4],
+    sol:"Drainé, terreau agrumes, pH 6-6,5",
+    arrosage:"Régulier, ne jamais laisser sécher complètement en pot",
+    fertilisation:"Engrais spécial agrumes mars-septembre",
+    maladies:"Cochenille, araignée rouge",
+    taille:"Taille légère d'entretien en fin d'hiver (mars), après les derniers risques de gel : aérer le centre de la couronne, supprimer les rameaux morts et les gourmands qui partent du porte-greffe sous le point de greffe (les repérer dès leur apparition et les arracher à la base). Coupe au sécateur désinfecté, juste au-dessus d'un œil orienté vers l'extérieur. La cueillette régulière des feuilles pour la cuisine suffit souvent à entretenir le port.",
+    tip:"On récolte surtout les feuilles en cuisine ; le fruit se cueille vert foncé et bosselé, ferme." },
+  "Feijoa": { emoji:"🟢", cat:"fruit", harvest:[10,12], prune:[3,4],
+    sol:"Drainé, tolère le vent marin, pH 6-7",
+    arrosage:"Modéré, sol jamais détrempé",
+    fertilisation:"Compost léger au printemps",
+    maladies:"Peu de maladies graves en climat sec",
+    taille:"Taille légère en fin d'hiver, après le risque de gel : aérer le centre, raccourcir les pousses trop longues, le feijoa fructifie sur le bois de l'année donc éviter une taille sévère qui retarderait la récolte.",
+    tip:"Attendez qu'il tombe légèrement de lui-même en secouant la branche, ne pas forcer la cueillette." },
+  "Argousier": { emoji:"🟠", cat:"fruit", harvest:[9,10], prune:[2,3],
+    sol:"Pauvre et sec toléré, pH 6-8",
+    arrosage:"Faible une fois installé, tolère très bien la sécheresse",
+    fertilisation:"Peu exigeant, aucune fertilisation particulière",
+    maladies:"Peu de maladies graves",
+    taille:"Taille en fin d'hiver : supprimer les rejets excédentaires à la base (plante drageonnante), raccourcir les branches trop longues, attention aux épines, porter des gants.",
+    tip:"Les baies sont très acides et fragiles : coupez de petites branches plutôt que de cueillir grain par grain." },
+  "Pistache": { emoji:"🌰", cat:"fruit", harvest:[9,10], prune:[2,3],
+    sol:"Drainé, climat sec, tolère le calcaire, pH 6,5-8,5",
+    arrosage:"Faible, très résistant à la sécheresse une fois installé",
+    fertilisation:"Peu exigeant, compost léger",
+    maladies:"Psylle du pistachier, peu de maladies graves",
+    taille:"Taille de formation les 3-4 premières années pour charpenter l'arbre, puis taille d'entretien légère en fin d'hiver : aérer le centre, supprimer bois mort.",
+    tip:"Récoltez quand l'enveloppe rose-rouge s'ouvre et laisse voir la coque claire." },
+  "Fruit de la passion (grenadille)": { emoji:"🟣", cat:"fruit", harvest:[9,12], prune:[3,4],
+    sol:"Drainé, riche, pH 6-6,5",
+    arrosage:"Régulier en été, réduire en hiver",
+    fertilisation:"Compost au printemps, apport potassique en floraison",
+    maladies:"Pucerons, araignée rouge",
+    taille:"Taille de nettoyage en fin d'hiver : supprimer le bois mort et les lianes emmêlées, rabattre les tiges ayant fructifié d'un tiers pour stimuler l'émission de nouvelles pousses florifères.",
+    tip:"Ramassez-le tombé au sol ou dès que la peau se ride légèrement, signe de pleine maturité." },
+  "Kiwi": { emoji:"🥝", cat:"fruit", harvest:[10,11], prune:[12,2],
+    sol:"Riche, frais, drainé, pH 6-7",
+    arrosage:"Soutenu en été, sensible au manque d'eau",
+    fertilisation:"Compost au printemps, apport azoté en début de saison",
+    maladies:"Chancre bactérien (PSA), cochenilles",
+    taille:"Taille hivernale sévère (hors gel) : rabattre les rameaux ayant fructifié à 2-3 yeux au-dessus du bois de l'an dernier. En été, tailler en vert les pousses trop longues pour aérer le feuillage et faciliter la pollinisation (nécessite un pied mâle à proximité).",
+    tip:"Récoltez fin octobre même ferme, il mûrit ensuite au fruitier." },
+  "Citron": { emoji:"🍋", cat:"fruit", harvest:[11,3], prune:[3,4],
+    sol:"Drainé, légèrement acide à neutre, pH 6-7 (terreau agrumes en pot)",
+    arrosage:"Régulier sans excès, laisser sécher en surface entre 2 arrosages",
+    fertilisation:"Engrais spécial agrumes de mars à septembre, arrêt en hiver",
+    maladies:"Cochenille, puceron, mineuse des agrumes",
+    taille:"Taille légère d'entretien en fin d'hiver (mars), après les derniers risques de gel : aérer le centre de la couronne, supprimer les rameaux morts et les gourmands qui partent du porte-greffe sous le point de greffe (les repérer dès leur apparition et les arracher à la base). Coupe au sécateur désinfecté, juste au-dessus d'un œil orienté vers l'extérieur.",
+    tip:"Coupez au sécateur avec un petit bout de tige, ne pas arracher." },
+  "Orange": { emoji:"🍊", cat:"fruit", harvest:[12,2], prune:[3,4],
+    sol:"Drainé, légèrement acide, pH 6-7",
+    arrosage:"Régulier, drainage soigné indispensable",
+    fertilisation:"Engrais spécial agrumes mars-septembre",
+    maladies:"Cochenille, puceron, mineuse",
+    taille:"Taille légère d'entretien en fin d'hiver (mars), après les derniers risques de gel : aérer le centre de la couronne, supprimer les rameaux morts et les gourmands qui partent du porte-greffe sous le point de greffe (les repérer dès leur apparition et les arracher à la base). Coupe au sécateur désinfecté, juste au-dessus d'un œil orienté vers l'extérieur.",
+    tip:"La couleur n'est pas toujours signe de maturité sous climat doux : goûtez." },
+  "Mandarine": { emoji:"🍊", cat:"fruit", harvest:[11,1], prune:[3,4],
+    sol:"Drainé, légèrement acide, pH 6-7",
+    arrosage:"Modéré et régulier",
+    fertilisation:"Engrais spécial agrumes mars-septembre",
+    maladies:"Cochenille, puceron",
+    taille:"Taille légère d'entretien en fin d'hiver (mars), après les derniers risques de gel : aérer le centre de la couronne, supprimer les rameaux morts et les gourmands qui partent du porte-greffe sous le point de greffe (les repérer dès leur apparition et les arracher à la base). Coupe au sécateur désinfecté, juste au-dessus d'un œil orienté vers l'extérieur.",
+    tip:"Récoltez au sécateur, la peau se détache mal à la main sans abîmer le fruit." },
+  "Grenade": { emoji:"🔴", cat:"fruit", harvest:[9,11], prune:[2,3],
+    sol:"Drainé même pauvre, tolère le calcaire, pH 6,5-8",
+    arrosage:"Faible une fois installé, tolère la sécheresse",
+    fertilisation:"Compost léger en fin d'hiver",
+    maladies:"Pucerons, cochenilles, peu de maladies graves",
+    taille:"Taille légère en fin d'hiver : supprimer systématiquement les rejets/drageons à la base, aérer le centre, raccourcir les branches trop longues d'un tiers, coupe au-dessus d'un œil externe.",
+    tip:"Le fruit sonne creux et sec quand on le tapote, signe de maturité." },
+  "Nèfle": { emoji:"🟠", cat:"fruit", harvest:[10,12], prune:[3,4],
+    sol:"Peu exigeant, drainé, pH 6-8",
+    arrosage:"Faible, tolère bien la sécheresse une fois adulte",
+    fertilisation:"Compost léger, peu de besoins",
+    maladies:"Feu bactérien, pucerons",
+    taille:"Taille d'entretien minimale en fin d'hiver : supprimer bois mort et branches mal placées, aérer légèrement le centre, éviter les grosses plaies (porte d'entrée du feu bactérien).",
+    tip:"Laissez blettir sur l'arbre après les premières gelées pour l'adoucir." },
+  "Kaki": { emoji:"🟠", cat:"fruit", harvest:[10,12], prune:[2,3],
+    sol:"Drainé, pH 6-7,5",
+    arrosage:"Modéré, résiste bien une fois adulte",
+    fertilisation:"Compost léger fin d'hiver",
+    maladies:"Peu de maladies graves ; surveiller cochenilles",
+    taille:"Taille de formation en gobelet les premières années, puis taille légère annuelle en fin d'hiver : raccourcir les rameaux de l'année d'un tiers pour limiter le poids des fruits sur les branches, supprimer le bois mort.",
+    tip:"Cueillez ferme puis laissez ramollir à température ambiante avant de consommer." },
+  "Framboise": { emoji:"🍓", cat:"fruit", harvest:[6,10], prune:[2,3],
+    sol:"Frais, riche, drainé, pH 6-6,5",
+    arrosage:"Régulier, paillage conseillé pour garder l'humidité au pied",
+    fertilisation:"Compost au printemps",
+    maladies:"Ver de la framboise, oïdium, botrytis",
+    taille:"Couper à ras du sol, au sécateur, les cannes ayant fructifié cette année (elles ne refructifient jamais) : distinguer les cannes brunes/ligneuses (à couper) des jeunes pousses vertes de l'année (à conserver). Sur variétés remontantes, on peut aussi tout rabattre à 10 cm du sol en fin d'hiver pour une récolte unique et abondante l'automne suivant.",
+    tip:"Le fruit se détache sans le réceptacle blanc quand il est mûr." },
+  "Fraise": { emoji:"🍓", cat:"fruit", harvest:[5,7], prune:null,
+    sol:"Riche, drainé, légèrement acide, pH 6-6,5",
+    arrosage:"Régulier au pied, éviter de mouiller les feuilles et les fruits",
+    fertilisation:"Compost au printemps, engrais riche en potasse à la floraison",
+    maladies:"Oïdium, pourriture grise (botrytis), puceron",
+    taille:"Pas de taille de bois : après récolte, couper au ras les feuilles abîmées et les stolons non utilisés pour le bouturage, au sécateur ou au ciseau, sans toucher au cœur de la touffe.",
+    tip:"Récoltez tôt le matin, avec la petite queue, dès que le fruit est bien rouge." },
+  "Groseille": { emoji:"🔴", cat:"fruit", harvest:[6,8], prune:[11,2],
+    sol:"Frais, riche, pH 6-6,5",
+    arrosage:"Régulier, paillage utile en été",
+    fertilisation:"Compost au printemps",
+    maladies:"Oïdium américain, puceron, chenille défoliatrice",
+    taille:"Taille hivernale en gobelet ouvert sur 8-10 branches charpentières : supprimer le bois de plus de 4 ans à la base (fructifie surtout sur bois de 2-3 ans), raccourcir les jeunes pousses d'un tiers, coupe au-dessus d'un œil orienté vers l'extérieur.",
+    tip:"Coupez la grappe entière plutôt que grain par grain." },
+  "Cassis": { emoji:"⚫", cat:"fruit", harvest:[6,8], prune:[11,2],
+    sol:"Frais et riche, pH 6-6,5",
+    arrosage:"Régulier, sensible à la sécheresse",
+    fertilisation:"Compost au printemps, apport azoté modéré",
+    maladies:"Oïdium, rouille, cécidomyie",
+    taille:"Taille hivernale plus sévère que le groseillier : supprimer chaque année à la base un tiers du bois le plus âgé (plus de 3 ans, le cassis fructifie surtout sur le bois d'un et deux ans), garder une quinzaine de branches jeunes et vigoureuses par pied, coupe nette au ras du sol.",
+    tip:"Attendez que toute la grappe soit noire et légèrement translucide." },
+  "Mûre": { emoji:"⚫", cat:"fruit", harvest:[8,10], prune:[2,3],
+    sol:"Peu exigeant, tolère les sols pauvres, pH 5,5-7",
+    arrosage:"Modéré, tolère bien la sécheresse une fois installée",
+    fertilisation:"Compost léger au printemps",
+    maladies:"Peu sensible ; surveiller rouille et pucerons",
+    taille:"Après récolte, couper à ras du sol les cannes ayant fructifié (bisannuelles). Palisser les jeunes pousses de l'année sur fil ou treillage pour qu'elles fructifient l'an prochain ; porter des gants épais, les tiges sont très épineuses.",
+    tip:"Se détache très facilement une fois mûre, sans résistance." },
+  "Myrtille": { emoji:"🔵", cat:"fruit", harvest:[7,8], prune:[2,3],
+    sol:"Acide impératif, terre de bruyère, pH 4,5-5,5",
+    arrosage:"Régulier à l'eau non calcaire (eau de pluie idéalement)",
+    fertilisation:"Engrais plantes de terre de bruyère au printemps",
+    maladies:"Oïdium, pucerons, drosophile suzukii",
+    taille:"Taille légère : les 3 premières années, ne pas tailler (juste retirer les fleurs pour fortifier le pied). Ensuite, en fin d'hiver, supprimer à la base le bois de plus de 6 ans et les branches faibles ou couchées, aérer le centre sans dégarnir.",
+    tip:"Le fruit tombe presque seul dans la main quand il est prêt." },
+  "Melon": { emoji:"🍈", cat:"fruit", harvest:[7,9], prune:null,
+    sol:"Riche, réchauffé, drainé, pH 6-7",
+    arrosage:"Régulier, réduit en fin de grossissement pour concentrer le sucre",
+    fertilisation:"Engrais riche en potasse toutes les 2 semaines en végétation",
+    maladies:"Oïdium, mildiou, pucerons",
+    taille:"Pincer la tige principale au-dessus de la 5e feuille pour favoriser les tiges secondaires porteuses de fleurs femelles ; limiter à 3-4 fruits par pied en supprimant les fruits surnuméraires pour concentrer la sève.",
+    tip:"Le pédoncule se craquèle et le fruit dégage un parfum sucré net." },
+  "Pastèque": { emoji:"🍉", cat:"fruit", harvest:[7,9], prune:null,
+    sol:"Riche, réchauffé, drainé, pH 6-6,8",
+    arrosage:"Abondant sauf dans les 2 dernières semaines avant récolte",
+    fertilisation:"Engrais riche en potasse en végétation",
+    maladies:"Oïdium, pucerons",
+    taille:"Pincer la tige principale après la 3e-4e feuille pour favoriser les ramifications, limiter à 2-3 fruits par pied en supprimant les fleurs et fruits excédentaires.",
+    tip:"Un son mat et creux au tapotement signale la maturité." },
+  "Tomate": { emoji:"🍅", cat:"fruit", harvest:[7,10], prune:null,
+    sol:"Riche, drainé, pH 6-6,8",
+    arrosage:"Régulier au pied, éviter de mouiller le feuillage",
+    fertilisation:"Engrais tomate riche en potasse toutes les 2 semaines",
+    maladies:"Mildiou, oïdium, puceron, mineuse",
+    taille:"Ébourgeonnage hebdomadaire : pincer avec les doigts les gourmands (pousses à l'aisselle entre tige et feuille) dès qu'ils apparaissent, sur variétés à tuteurer en tige unique. Effeuiller le bas du pied au fur et à mesure de la récolte pour aérer et limiter le mildiou. Étêter la tige principale fin août pour concentrer la sève sur les derniers fruits.",
+    tip:"Récoltez bien rouge, en tournant légèrement le fruit sur sa tige." },
+  "Olive": { emoji:"🫒", cat:"fruit", harvest:[10,12], prune:[3,5],
+    sol:"Drainé même calcaire, très résistant à la sécheresse, pH 7-8,5",
+    arrosage:"Faible une fois adulte ; important les 2 premières années",
+    fertilisation:"Compost léger, engrais riche en azote au printemps",
+    maladies:"Mouche de l'olive, œil de paon, cochenille noire",
+    taille:"Taille tous les 2-3 ans, en fin d'hiver/début de printemps hors gel : conduite en gobelet ouvert, l'objectif classique étant qu'un oiseau puisse y voler sans se poser. Supprimer les rejets à la base et sur le tronc, éclaircir le centre, raccourcir les branches trop hautes. Sécateur ou petite scie, désinfecter entre arbres.",
+    tip:"Pour la table, cueillez vertes début octobre ; pour l'huile, attendez qu'elles noircissent." },
+  "Noix": { emoji:"🌰", cat:"fruit", harvest:[9,10], prune:[7,8],
+    sol:"Profond, drainé, pH 6-7,5",
+    arrosage:"Faible une fois l'arbre installé",
+    fertilisation:"Peu exigeant, compost léger en hiver",
+    maladies:"Bactériose, anthracnose",
+    taille:"Ne jamais tailler en hiver ni au printemps : le noyer 'pleure' abondamment et les plaies fraîches attirent la bactériose. Tailler uniquement en été (juillet-août), a minima, pour retirer bois mort et branches basses gênantes.",
+    tip:"Ramassez au sol après la chute naturelle de l'enveloppe verte." },
+  "Amande": { emoji:"🌰", cat:"fruit", harvest:[8,9], prune:[6,7],
+    sol:"Drainé même sec, calcaire toléré, pH 6,5-8,5",
+    arrosage:"Faible, très tolérant à la sécheresse et à la chaleur",
+    fertilisation:"Peu exigeant, compost léger en hiver",
+    maladies:"Cloque, moniliose, puceron",
+    taille:"Taille légère après récolte (juin-juillet) : aérer le centre, supprimer bois mort et rameaux qui se croisent, éviter la taille hivernale (sensibilité aux maladies du bois comme le pêcher).",
+    tip:"Récoltez quand l'enveloppe verte se fend et s'ouvre seule." },
+  "Châtaigne": { emoji:"🌰", cat:"fruit", harvest:[10,11], prune:[1,2],
+    sol:"Acide à neutre, drainé, pH 5-6,5 (évite le calcaire)",
+    arrosage:"Faible une fois adulte",
+    fertilisation:"Peu exigeant, compost léger en hiver",
+    maladies:"Chancre de l'écorce, maladie de l'encre",
+    taille:"Taille d'entretien minimale en hiver : supprimer bois mort et branches basses uniquement, le châtaignier n'aime pas les tailles sévères (portes d'entrée du chancre).",
+    tip:"Ramassez au sol dès que les bogues s'ouvrent naturellement." },
+  "Coing": { emoji:"🍐", cat:"fruit", harvest:[10,11], prune:[12,2],
+    sol:"Frais, tolère l'argile lourde, pH 6-7,5",
+    arrosage:"Modéré, arrosage copieux en période de grossissement du fruit",
+    fertilisation:"Compost léger en fin d'hiver, peu exigeant",
+    maladies:"Rouille, moniliose, pucerons",
+    taille:"Taille légère en hiver : aérer le centre, supprimer le bois mort et les rejets à la base ; le cognassier fructifie sur bois de 2-3 ans, éviter de rabattre trop court.",
+    tip:"Récoltez bien jaune et parfumé, juste avant les premières gelées." },
+  "Nectarine": { emoji:"🍑", cat:"fruit", harvest:[7,9], prune:[3,4],
+    sol:"Léger, drainé, peu calcaire, pH 6-7",
+    arrosage:"Régulier en période de grossissement",
+    fertilisation:"Compost fin d'hiver ; potassium à la formation du fruit",
+    maladies:"Cloque, oïdium, puceron vert",
+    taille:"Même principe que le pêcher : rabattre après récolte les rameaux fructifères à 2-3 yeux, conserver un rameau de remplacement bien placé, coupe nette au sécateur désinfecté.",
+    tip:"Comme la pêche : le fruit doit céder sous une légère pression." },
+  "Mirabelle": { emoji:"🟡", cat:"fruit", harvest:[8,9], prune:[7,8],
+    sol:"Profond, frais, tolérant, pH 6-7,5",
+    arrosage:"Modéré, tolère bien la chaleur une fois installé",
+    fertilisation:"Compost léger fin d'hiver",
+    maladies:"Puceron, moniliose",
+    taille:"Comme le prunier : taille d'été après récolte, aération du centre, coupe nette au-dessus d'un œil, éviter toute intervention en période humide ou de gel.",
+    tip:"Ramassez au sol ou secouez légèrement, elle tombe facilement à maturité." },
+  "Physalis": { emoji:"🟠", cat:"fruit", harvest:[8,10], prune:null,
+    sol:"Drainé, riche, pH 6-6,5",
+    arrosage:"Régulier mais sans excès, sol jamais détrempé",
+    fertilisation:"Compost au printemps, apport potassique en cours de culture",
+    maladies:"Doryphore, pucerons, mildiou",
+    taille:"Pas de taille de bois (plante herbacée) : pincer l'extrémité des tiges en cours de saison pour favoriser la ramification et la production de fleurs, comme pour un plant de tomate.",
+    tip:"L'enveloppe se dessèche et devient beige-orangé, le fruit doré à l'intérieur." },
+  "Kiwaï": { emoji:"🥝", cat:"fruit", harvest:[9,10], prune:[12,2],
+    sol:"Frais, drainé, pH 6-7",
+    arrosage:"Soutenu en été comme le kiwi",
+    fertilisation:"Compost au printemps",
+    maladies:"Peu de maladies, surveiller cochenilles",
+    taille:"Même conduite que le kiwi : taille hivernale des rameaux fructifères à 2-3 yeux, taille en vert l'été pour aérer.",
+    tip:"Se mange avec la peau, récoltez ferme puis laissez blettir quelques jours." },
+  "Goji": { emoji:"🔴", cat:"fruit", harvest:[7,9], prune:[2,3],
+    sol:"Drainé même pauvre, pH 6,5-8, tolère le calcaire",
+    arrosage:"Modéré, très résistant à la sécheresse une fois installé",
+    fertilisation:"Compost léger, peu exigeant",
+    maladies:"Peu de maladies ; surveiller pucerons",
+    taille:"Taille en fin d'hiver : rabattre les rameaux de l'année précédente d'un tiers pour stimuler la ramification (fructifie sur bois de l'année), supprimer les rejets et drageons excédentaires à la base.",
+    tip:"Cueillez délicatement, le fruit est très fragile une fois mûr." },
+  "Airelle": { emoji:"🔵", cat:"fruit", harvest:[8,9], prune:[2,3],
+    sol:"Acide comme la myrtille, pH 4,5-5,5",
+    arrosage:"Régulier à l'eau non calcaire",
+    fertilisation:"Engrais plantes de terre de bruyère au printemps",
+    maladies:"Oïdium, pucerons",
+    taille:"Même principe que la myrtille : taille légère en fin d'hiver, suppression du bois âgé et faible à la base, aération du centre sans dégarnir le pied.",
+    tip:"Comme la myrtille, le fruit se détache sans résistance à maturité." },
+  "Pomelo": { emoji:"🍊", cat:"fruit", harvest:[12,3], prune:[3,4],
+    sol:"Drainé, légèrement acide, pH 6-7",
+    arrosage:"Régulier, sol jamais détrempé",
+    fertilisation:"Engrais spécial agrumes mars-septembre",
+    maladies:"Cochenille, mineuse",
+    taille:"Taille légère d'entretien en fin d'hiver (mars), après les derniers risques de gel : aérer le centre de la couronne, supprimer les rameaux morts et les gourmands qui partent du porte-greffe sous le point de greffe (les repérer dès leur apparition et les arracher à la base). Coupe au sécateur désinfecté, juste au-dessus d'un œil orienté vers l'extérieur.",
+    tip:"Un pomelo mûr est lourd pour sa taille et la peau légèrement souple." },
+  "Cédrat": { emoji:"🍋", cat:"fruit", harvest:[11,1], prune:[3,4],
+    sol:"Drainé, légèrement acide, pH 6-7",
+    arrosage:"Régulier, sensible au manque d'eau en été",
+    fertilisation:"Engrais spécial agrumes mars-septembre",
+    maladies:"Cochenille, mineuse",
+    taille:"Taille légère d'entretien en fin d'hiver (mars), après les derniers risques de gel : aérer le centre de la couronne, supprimer les rameaux morts et les gourmands qui partent du porte-greffe sous le point de greffe (les repérer dès leur apparition et les arracher à la base). Coupe au sécateur désinfecté, juste au-dessus d'un œil orienté vers l'extérieur.",
+    tip:"Récoltez quand la peau épaisse prend une teinte jaune uniforme." },
+  "Arbouse": { emoji:"🔴", cat:"fruit", harvest:[10,12], prune:[3,4],
+    sol:"Drainé, tolère les sols pauvres et acides, pH 5-7",
+    arrosage:"Faible, très résistant à la sécheresse une fois installé",
+    fertilisation:"Peu exigeant, compost léger",
+    maladies:"Peu de maladies, surveiller pucerons",
+    taille:"Taille légère de mise en forme en fin d'hiver : supprimer bois mort et branches mal orientées, l'arbousier supporte bien une taille sévère de rajeunissement si besoin.",
+    tip:"Ne récoltez que les fruits bien rouges et souples, cueillis un par un." },
+  "Jujube": { emoji:"🟤", cat:"fruit", harvest:[9,10], prune:[2,3],
+    sol:"Pauvre toléré, drainé, pH 6,5-8,5",
+    arrosage:"Faible, très résistant à la chaleur et à la sécheresse",
+    fertilisation:"Peu exigeant, compost léger en hiver",
+    maladies:"Peu de maladies graves",
+    taille:"Taille légère en fin d'hiver : supprimer les rejets à la base et le bois mort, aérer le centre, attention aux épines sur le bois âgé.",
+    tip:"Cueillez quand la peau vire du vert au brun-rouge, encore croquant." },
+  "Pêche de vigne": { emoji:"🍑", cat:"fruit", harvest:[8,9], prune:[3,4],
+    sol:"Léger, drainé, peu calcaire, pH 6-7",
+    arrosage:"Régulier en période de grossissement",
+    fertilisation:"Compost fin d'hiver ; potassium à la formation du fruit",
+    maladies:"Cloque, moniliose",
+    taille:"Identique au pêcher classique : taille de renouvellement après récolte, rabattage à 2-3 yeux des rameaux fructifères, évacuer les résidus de taille (foyer à moniliose).",
+    tip:"Chair très rouge et parfum intense : récoltez quand elle cède sous le doigt." },
+  "Poire asiatique (Nashi)": { emoji:"🍐", cat:"fruit", harvest:[8,9], prune:[12,2],
+    sol:"Frais et drainé, pH 6-7",
+    arrosage:"Régulier les premières années, sensible au manque d'eau en été",
+    fertilisation:"Compost fin d'hiver, apport potassique à la nouaison",
+    maladies:"Tavelure, feu bactérien, carpocapse",
+    taille:"Sécateur désinfecté à l'alcool à 70° entre chaque arbre (contre le feu bactérien). En hiver hors gel (déc.-fév.) : supprimer bois mort, gourmands verticaux et branches qui se croisent. Raccourcir les rameaux d'un an au-dessus du 3e-4e bourgeon en partant de la base, coupe nette en biseau à 45°, 2-3 mm au-dessus d'un œil orienté vers l'extérieur pour ouvrir l'arbre à la lumière. Conduite souvent en palmette ou en Y pour faciliter l'éclaircissage des fruits.",
+    tip:"Contrairement à la poire classique, elle se consomme mûre directement sur l'arbre." },
+  "Basilic": { emoji:"🌿", cat:"aromatique", harvest:[6,10], prune:null,
+    sol:"Riche, léger, drainé, pH 6-7",
+    arrosage:"Régulier, sol jamais sec ; arroser au pied tôt le matin",
+    fertilisation:"Compost au printemps, engrais liquide léger toutes les 3 semaines",
+    maladies:"Pucerons, limaces sur jeunes plants, fonte des semis",
+    taille:"Pincez le sommet des tiges au-dessus d'une paire de feuilles dès l'apparition de 4-6 feuilles pour favoriser la ramification. Supprimez les fleurs dès leur apparition (la floraison arrête la pousse des feuilles). Ne prélevez jamais plus d'un tiers du pied en une fois.",
+    tip:"Cueillez les feuilles du haut de la tige, jeunes et bien vertes, de préférence le matin." },
+  "Persil": { emoji:"🌿", cat:"aromatique", harvest:[4,11], prune:null,
+    sol:"Riche, frais, drainé, pH 6-7",
+    arrosage:"Régulier, le persil craint le dessèchement du sol",
+    fertilisation:"Compost au printemps",
+    maladies:"Puceron, mouche de la carotte (famille proche)",
+    taille:"Coupez les tiges à ras au niveau du collet, en partant des feuilles extérieures les plus âgées, pour laisser le cœur de la touffe continuer à produire.",
+    tip:"Récoltez au fur et à mesure des besoins ; les feuilles les plus foncées et fermes sont les plus parfumées." },
+  "Ciboulette": { emoji:"🌿", cat:"aromatique", harvest:[3,10], prune:null,
+    sol:"Riche, frais, drainé, pH 6-7",
+    arrosage:"Régulier, apprécie un sol qui ne sèche jamais complètement",
+    fertilisation:"Compost au printemps",
+    maladies:"Rouille, peu de ravageurs",
+    taille:"Coupez les brins à 2-3 cm au-dessus du sol avec des ciseaux, jamais au ras de la base pour laisser la touffe repartir ; ne coupez qu'un tiers de la touffe à la fois.",
+    tip:"Coupez avant la floraison pour un goût plus doux ; les fleurs violettes se mangent aussi." },
+  "Menthe": { emoji:"🌿", cat:"aromatique", harvest:[4,10], prune:null,
+    sol:"Frais, riche, tolère l'humidité, pH 6-7,5",
+    arrosage:"Abondant, la menthe apprécie un sol qui reste frais en permanence",
+    fertilisation:"Compost au printemps, peu exigeante",
+    maladies:"Rouille de la menthe, pucerons",
+    taille:"Pincez régulièrement les extrémités pour garder un port compact ; rabattez toute la touffe à 5 cm du sol en fin d'été pour relancer une pousse dense. Cultivez en pot enterré : la menthe est très envahissante.",
+    tip:"Cueillez les jeunes feuilles du sommet, plus tendres et parfumées que les vieilles feuilles basses." },
+  "Thym": { emoji:"🌿", cat:"aromatique", harvest:[3,11], prune:null,
+    sol:"Pauvre, sec, très drainé, calcaire toléré, pH 6,5-8,5",
+    arrosage:"Faible, très résistant à la sécheresse une fois installé",
+    fertilisation:"Aucune ou compost très léger, un sol trop riche l'affaiblit",
+    maladies:"Peu de maladies, craint surtout l'excès d'humidité au pied",
+    taille:"Taille légère après la floraison (été) pour garder un port compact et éviter que le pied ne se dégarnisse au centre ; ne jamais couper dans le bois âgé sans feuilles, il ne repart pas.",
+    tip:"Récoltez juste avant la floraison, les huiles essentielles sont alors les plus concentrées." },
+  "Romarin": { emoji:"🌿", cat:"aromatique", harvest:[1,12], prune:null,
+    sol:"Pauvre, sec, très drainé, calcaire toléré, pH 6,5-8,5",
+    arrosage:"Faible une fois installé, très résistant à la sécheresse",
+    fertilisation:"Aucune ou compost très léger",
+    maladies:"Peu de maladies, craint l'excès d'humidité",
+    taille:"Taille de mise en forme après la floraison (printemps) : raccourcir les tiges d'un tiers pour densifier ; comme le thym, ne pas couper dans le bois nu sans feuilles.",
+    tip:"Récoltez toute l'année, de préférence les jeunes pousses tendres en bout de tige." },
+  "Origan": { emoji:"🌿", cat:"aromatique", harvest:[5,10], prune:null,
+    sol:"Pauvre à moyen, drainé, calcaire toléré, pH 6-8",
+    arrosage:"Faible une fois installé, tolère bien la sécheresse",
+    fertilisation:"Peu exigeant, compost léger au printemps",
+    maladies:"Peu de maladies graves",
+    taille:"Rabattez la touffe de moitié après la floraison pour stimuler une repousse dense et retarder la montée en bois.",
+    tip:"Le parfum est plus concentré juste avant la floraison ; peut se cueillir frais ou pour faire sécher en bouquets." },
+  "Marjolaine": { emoji:"🌿", cat:"aromatique", harvest:[5,10], prune:null,
+    sol:"Drainé, léger, pH 6-7,5",
+    arrosage:"Modéré, sol jamais détrempé",
+    fertilisation:"Compost léger au printemps",
+    maladies:"Peu de maladies graves",
+    taille:"Pincez régulièrement le sommet des tiges pour garder un port compact et retarder la floraison, plus riche en arôme.",
+    tip:"Cueillez les jeunes pousses juste avant la floraison pour un parfum plus doux que l'origan." },
+  "Sauge": { emoji:"🌿", cat:"aromatique", harvest:[3,11], prune:null,
+    sol:"Drainé, plutôt pauvre, calcaire toléré, pH 6-8",
+    arrosage:"Faible une fois installée, tolère bien la sécheresse",
+    fertilisation:"Peu exigeant, compost léger",
+    maladies:"Oïdium en climat humide, pucerons",
+    taille:"Taille de rabattage en fin d'hiver (mars) : couper les tiges de moitié pour éviter que le pied ne se dégarnisse et se lignifie au centre.",
+    tip:"Récoltez les feuilles matures avant la floraison pour un maximum d'arôme." },
+  "Estragon": { emoji:"🌿", cat:"aromatique", harvest:[4,10], prune:null,
+    sol:"Drainé, léger, pH 6-7,5",
+    arrosage:"Modéré, sensible à l'excès d'eau en hiver",
+    fertilisation:"Compost léger au printemps",
+    maladies:"Rouille, peu de ravageurs",
+    taille:"Rabattez toute la touffe au ras du sol en fin d'automne ; en cours de saison, pincez le sommet des tiges pour densifier le pied.",
+    tip:"Cueillez les jeunes pousses tendres au sommet des tiges, avant la floraison." },
+  "Coriandre": { emoji:"🌿", cat:"aromatique", harvest:[4,10], prune:null,
+    sol:"Riche, drainé, pH 6-7",
+    arrosage:"Régulier, monte vite en graines si le sol sèche",
+    fertilisation:"Compost léger au semis",
+    maladies:"Puceron, oïdium en fin de cycle",
+    taille:"Coupez les feuilles extérieures à ras avec des ciseaux, en laissant le cœur du pied continuer à pousser ; semer toutes les 3-4 semaines pour un étalement continu de la récolte.",
+    tip:"Récoltez avant la montée en fleur, qui rend les feuilles plus amères ; les graines se récoltent sèches en fin de cycle." },
+  "Aneth": { emoji:"🌿", cat:"aromatique", harvest:[5,9], prune:null,
+    sol:"Drainé, léger, pH 6-7",
+    arrosage:"Régulier, surtout en début de croissance",
+    fertilisation:"Compost léger au semis",
+    maladies:"Puceron, peu de maladies graves",
+    taille:"Coupez les tiges feuillées au fur et à mesure des besoins ; laisser quelques ombelles monter en graines si vous voulez les récolter pour la conservation.",
+    tip:"Récoltez les feuilles fines avant la floraison pour un goût plus doux." },
+  "Sarriette": { emoji:"🌿", cat:"aromatique", harvest:[5,10], prune:null,
+    sol:"Drainé, pauvre toléré, calcaire toléré, pH 6,5-8",
+    arrosage:"Faible une fois installée, tolère bien la sécheresse",
+    fertilisation:"Peu exigeant, compost léger",
+    maladies:"Peu de maladies graves",
+    taille:"Taille légère après floraison pour garder un port compact, comme le thym ne pas couper dans le bois nu.",
+    tip:"Récoltez les jeunes pousses avant la floraison, le parfum poivré est alors le plus marqué." },
+  "Laurier (laurier-sauce)": { emoji:"🌿", cat:"aromatique", harvest:[1,12], prune:null,
+    sol:"Drainé, tolère le calcaire, pH 6-8",
+    arrosage:"Modéré, plus soutenu en pot",
+    fertilisation:"Compost léger au printemps",
+    maladies:"Cochenille, psylle du laurier",
+    taille:"Taille de forme possible toute l'année, hors gel : raccourcir les pousses de l'année pour garder un port dense, supprimer les rejets à la base si non désirés.",
+    tip:"Cueillez les feuilles matures, vert foncé, toute l'année ; elles se conservent bien séchées." },
+  "Verveine citronnelle": { emoji:"🌿", cat:"aromatique", harvest:[5,10], prune:[3,4],
+    sol:"Drainé, léger, pH 6-7",
+    arrosage:"Régulier en été, réduire en hiver",
+    fertilisation:"Compost léger au printemps",
+    maladies:"Araignée rouge en climat très sec, peu de maladies",
+    taille:"En fin d'hiver, rabattre sévèrement les tiges de moitié à un tiers (repart du vieux bois) ; en été, pincer les extrémités pour densifier le port.",
+    tip:"Cueillez les feuilles fraîches toute la belle saison ; leur parfum citronné est plus fort juste avant la floraison." },
+  "Autre / personnalisé": { emoji:"🌿", cat:"fruit", harvest:[6,9], prune:null,
+    sol:"Adaptez selon les besoins spécifiques de la variété",
+    arrosage:"Adaptez selon les besoins spécifiques de la variété",
+    fertilisation:"Adaptez selon les besoins spécifiques de la variété",
+    maladies:"Observez la plante régulièrement",
+    taille:"Renseignez-vous sur la technique de taille propre à cette variété (bois de l'année, bois de 2-3 ans, plante herbacée...) avant d'intervenir.",
+    tip:"Ajustez la période de récolte selon votre propre expérience au jardin." },
+};
+
+/* Climat méditerranéen (sud de la France) : maturité avancée d'environ 2 semaines
+   par rapport aux dates de référence nationales ci-dessus. */
+const SOUTH_SHIFT_DAYS = 15;
+
+const MONTHS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const MONTHS_LONG = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+/* ---------------- State : plusieurs jardins (lieux) ---------------- */
+function defaultGrid(){
+  // Structure du plan : vue carte, centrée par défaut sur le sud de la France (Montpellier)
+  return { center: { lat: 43.6108, lng: 3.8767 }, zoom: 13, markers: [] };
+}
+function makeId(prefix){
+  return prefix+Date.now()+Math.random().toString(36).slice(2,7);
+}
+
+let STATE = null;
+try{
+  const savedState = localStorage.getItem('verger-state-v3');
+  if(savedState){
+    STATE = JSON.parse(savedState);
+  }
+}catch(e){ STATE = null; }
+
+if(!STATE){
+  // Migration depuis l'ancienne version mono-jardin, si elle existe
+  let migratedPlants = [];
+  try{
+    const oldSaved = localStorage.getItem('verger-plants');
+    if(oldSaved) migratedPlants = JSON.parse(oldSaved);
+  }catch(e){ migratedPlants = []; }
+
+  const firstId = makeId('g');
+  STATE = {
+    gardens: [{ id: firstId, name: 'Mon jardin' }],
+    currentGardenId: firstId,
+    data: { [firstId]: { plants: migratedPlants, grid: defaultGrid() } }
+  };
+}
+
+// Garde-fou : s'assure que chaque jardin déclaré a bien ses données
+STATE.gardens.forEach(g=>{
+  if(!STATE.data[g.id]) STATE.data[g.id] = { plants: [], grid: defaultGrid() };
+  if(!STATE.data[g.id].grid) STATE.data[g.id].grid = defaultGrid();
+  // Migration depuis l'ancien plan en grille (versions précédentes) vers le plan carte
+  if(!Array.isArray(STATE.data[g.id].grid.markers)){
+    STATE.data[g.id].grid = defaultGrid();
+  }
+});
+if(!STATE.data[STATE.currentGardenId]) STATE.currentGardenId = STATE.gardens[0].id;
+
+let plants = STATE.data[STATE.currentGardenId].plants;
+
+function persist(){
+  STATE.data[STATE.currentGardenId].plants = plants;
+  try{ localStorage.setItem('verger-state-v3', JSON.stringify(STATE)); }
+  catch(e){ console.error('Sauvegarde impossible', e); }
+}
+
+function currentGrid(){
+  return STATE.data[STATE.currentGardenId].grid;
+}
+
+function getPlantById(id){
+  return plants.find(p=>p.id===id);
+}
+
+function switchGarden(id){
+  STATE.currentGardenId = id;
+  plants = STATE.data[id].plants;
+  persist();
+  renderAll();
+}
+
+function createGarden(name){
+  const id = makeId('g');
+  STATE.gardens.push({ id, name: name || 'Nouveau jardin' });
+  STATE.data[id] = { plants: [], grid: defaultGrid() };
+  switchGarden(id);
+}
+
+function renameGarden(id, name){
+  const g = STATE.gardens.find(x=>x.id===id);
+  if(g && name.trim()){ g.name = name.trim(); persist(); renderGardenSwitcher(); }
+}
+
+function deleteGarden(id){
+  if(STATE.gardens.length<=1){
+    alert('Il doit rester au moins un jardin.');
+    return;
+  }
+  STATE.gardens = STATE.gardens.filter(g=>g.id!==id);
+  delete STATE.data[id];
+  if(STATE.currentGardenId===id){
+    switchGarden(STATE.gardens[0].id);
+  } else {
+    persist();
+    renderGardenSwitcher();
+  }
+}
+
+async function exportCurrentGarden(){
+  const g = STATE.gardens.find(x=>x.id===STATE.currentGardenId);
+  const payload = {
+    app: 'carnet-du-verger',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    gardenName: g ? g.name : 'Mon jardin',
+    plants: plants,
+    grid: currentGrid()
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const filename = `jardin-${slugify(g ? g.name : 'export')}.json`;
+
+  if(downloadsCap){
+    try{
+      await downloadsCap.save({ filename, data: json });
+      return;
+    }catch(e){
+      if(e && e.code === 'declined') return;
+      console.error('Export impossible', e);
+    }
+  }
+  // Repli si la capacité n'est pas disponible
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+}
+
+function importGardenFromFile(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    let payload;
+    try{
+      payload = JSON.parse(e.target.result);
+    }catch(err){
+      alert("Ce fichier n'est pas un export valide du Carnet du Verger.");
+      return;
+    }
+    if(!payload || payload.app !== 'carnet-du-verger' || !Array.isArray(payload.plants)){
+      alert("Ce fichier n'est pas un export valide du Carnet du Verger.");
+      return;
+    }
+    const id = makeId('g');
+    let name = payload.gardenName || 'Jardin importé';
+    const existingNames = STATE.gardens.map(g=>g.name);
+    if(existingNames.includes(name)) name = name + ' (importé)';
+    STATE.gardens.push({ id, name });
+    STATE.data[id] = {
+      plants: payload.plants || [],
+      grid: payload.grid || defaultGrid()
+    };
+    if(!STATE.data[id].grid.bgImage) STATE.data[id].grid.bgImage = STATE.data[id].grid.bgImage || null;
+    switchGarden(id);
+    alert('Jardin "'+name+'" importé avec succès.');
+  };
+  reader.onerror = ()=> alert("Impossible de lire ce fichier.");
+  reader.readAsText(file);
+}
+
+document.getElementById('exportGardenBtn').onclick = exportCurrentGarden;
+document.getElementById('importGardenBtn').onclick = ()=> document.getElementById('importGardenInput').click();
+document.getElementById('importGardenInput').onchange = (e)=>{
+  const file = e.target.files[0];
+  if(file) importGardenFromFile(file);
+  e.target.value = '';
+};
+
+/* ---------------- Date / harvest window logic ---------------- */
+function today(){ return new Date(); }
+
+// Construit une fenêtre [start,end] pour l'année donnée, décalée pour le climat sud, gère le passage d'année (ex 11->2)
+function windowForYear(startMonth, endMonth, yearStart){
+  const start = new Date(yearStart, startMonth-1, 1);
+  let endYear = yearStart;
+  if(endMonth < startMonth) endYear = yearStart+1;
+  const end = new Date(endYear, endMonth, 0); // dernier jour du mois de fin
+  start.setDate(start.getDate() - SOUTH_SHIFT_DAYS);
+  end.setDate(end.getDate() - SOUTH_SHIFT_DAYS);
+  return {start, end};
+}
+
+// Renvoie {status, daysUntil, daysLeft, start, end} en comparant la date du jour au créneau, décalé climat sud
+function harvestStatus(startMonth, endMonth){
+  const now = today();
+  const y = now.getFullYear();
+  const now0 = new Date(y, now.getMonth(), now.getDate());
+
+  let w = windowForYear(startMonth, endMonth, y);
+  if(now0 > w.end){
+    w = windowForYear(startMonth, endMonth, y+1);
+  }
+
+  if(now0 >= w.start && now0 <= w.end){
+    const daysLeft = Math.round((w.end - now0)/86400000);
+    return {status:'now', daysUntil:0, daysLeft, start:w.start, end:w.end};
+  } else {
+    const daysUntil = Math.round((w.start - now0)/86400000);
+    return {status: daysUntil<=21 ? 'soon':'wait', daysUntil, start:w.start, end:w.end};
+  }
+}
+
+// Fenêtre de taille/entretien saisonnier, décalée climat sud, formatée en texte
+function pruneLabel(pruneRange){
+  if(!pruneRange) return null;
+  const y = today().getFullYear();
+  const w = windowForYear(pruneRange[0], pruneRange[1], y);
+  return formatRangeDates(w.start, w.end);
+}
+
+function monthDayLabel(d){
+  const day = d.getDate();
+  const m = MONTHS_LONG[d.getMonth()];
+  if(day<=10) return 'début '+m;
+  if(day<=20) return 'mi-'+m;
+  return 'fin '+m;
+}
+
+function formatRangeDates(start, end){
+  return monthDayLabel(start) + " – " + monthDayLabel(end);
+}
+
+function fmtDate(d){
+  return d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear();
+}
+
+/* ---------------- Rendering ---------------- */
+function renderTodayBadge(){
+  document.getElementById('todayBadge').textContent = fmtDate(today());
+}
+
+function renderAll(){
+  renderTodayBadge();
+  renderGardenSwitcher();
+  renderToday();
+  renderGrid();
+  renderParcelGrid();
+}
+
+function renderGardenSwitcher(){
+  const sel = document.getElementById('gardenSelect');
+  sel.innerHTML = '';
+  STATE.gardens.forEach(g=>{
+    const opt = document.createElement('option');
+    opt.value = g.id;
+    opt.textContent = g.name;
+    if(g.id === STATE.currentGardenId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+document.getElementById('gardenSelect').onchange = (e)=> switchGarden(e.target.value);
+document.getElementById('newGardenBtn').onclick = ()=>{
+  const name = prompt('Nom du nouveau jardin (ex. "Sète", "Nice") :');
+  if(name && name.trim()) createGarden(name.trim());
+};
+document.getElementById('renameGardenBtn').onclick = ()=>{
+  const g = STATE.gardens.find(x=>x.id===STATE.currentGardenId);
+  const name = prompt('Renommer ce jardin :', g ? g.name : '');
+  if(name && name.trim()) renameGarden(STATE.currentGardenId, name.trim());
+};
+document.getElementById('deleteGardenBtn').onclick = ()=>{
+  const g = STATE.gardens.find(x=>x.id===STATE.currentGardenId);
+  if(g && confirm('Supprimer le jardin "'+g.name+'" et toutes ses fiches ? Cette action est irréversible.')){
+    deleteGarden(STATE.currentGardenId);
+  }
+};
+
+function renderToday(){
+  const list = document.getElementById('todayList');
+  list.innerHTML = '';
+  const items = plants.map(p=>{
+    const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+    const hs = harvestStatus(db.harvest[0], db.harvest[1]);
+    return {p, db, hs};
+  }).filter(x => x.hs.status==='now' || (x.hs.status==='soon'));
+  items.sort((a,b)=>{
+    const av = a.hs.status==='now' ? -1000+(a.hs.daysLeft||0) : a.hs.daysUntil;
+    const bv = b.hs.status==='now' ? -1000+(b.hs.daysLeft||0) : b.hs.daysUntil;
+    return av-bv;
+  });
+
+  if(items.length===0){
+    list.innerHTML = '<div class="today-empty sans">Rien à récolter dans l\'immédiat. Le carnet vous préviendra dès qu\'un fruit approche de sa saison.</div>';
+    return;
+  }
+
+  items.forEach(({p,db,hs})=>{
+    const row = document.createElement('div');
+    row.className = 'today-row' + (hs.status==='now' ? ' urgent':'');
+    let when;
+    if(hs.status==='now'){
+      when = hs.daysLeft<=0 ? "dernier jour de saison" : "fin de saison dans "+hs.daysLeft+" j";
+    } else {
+      when = "dans "+hs.daysUntil+" j";
+    }
+    row.innerHTML = `<span class="emoji">${db.emoji}</span>
+      <span class="txt"><b>${escapeHtml(plantDisplayName(p))}${p.variety? ' — '+escapeHtml(p.variety):''}</b> ${hs.status==='now' ? "— c'est la saison de la récolte" : "— la saison approche"}</span>
+      <span class="when sans">${when}</span>`;
+    row.onclick = ()=> openDetail(p.id);
+    list.appendChild(row);
+  });
+}
+
+let expandedFolders = new Set();
+
+function renderGrid(){
+  const grid = document.getElementById('gardenGrid');
+  const empty = document.getElementById('emptyState');
+  grid.innerHTML = '';
+  document.getElementById('plantCount').textContent = plants.length ? `(${plants.length})` : '';
+
+  if(plants.length===0){
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+
+  const withStatus = plants.map(p=>{
+    const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+    const hs = harvestStatus(db.harvest[0], db.harvest[1]);
+    return {p, db, hs};
+  });
+
+  const rank = {now:0, soon:1, wait:2, done:3};
+
+  // Regroupement par type de fruit (sous-dossiers), pour gérer plusieurs individus du même fruit
+  const groups = {};
+  withStatus.forEach(item=>{
+    if(!groups[item.p.type]) groups[item.p.type] = [];
+    groups[item.p.type].push(item);
+  });
+
+  const groupList = Object.keys(groups).map(type=>{
+    const items = groups[type];
+    items.sort((a,b)=>{
+      const ra = rank[a.hs.status], rb = rank[b.hs.status];
+      if(ra!==rb) return ra-rb;
+      return (a.hs.daysUntil||0) - (b.hs.daysUntil||0);
+    });
+    const bestRank = Math.min(...items.map(it=>rank[it.hs.status]));
+    return { type, items, bestRank };
+  });
+  groupList.sort((a,b)=> a.bestRank - b.bestRank || a.type.localeCompare(b.type,'fr'));
+
+  groupList.forEach(({type, items})=>{
+    const db0 = items[0].db;
+    const folder = document.createElement('div');
+    folder.className = 'type-folder';
+    const isOpen = expandedFolders.has(type) || items.length===1;
+
+    const header = document.createElement('div');
+    header.className = 'type-folder-header';
+    header.innerHTML = `<span class="chevron ${isOpen?'open':''}">▸</span>
+      <span class="tf-emoji">${db0.emoji}</span>
+      <span class="tf-name">${escapeHtml(type)}</span>
+      <span class="tf-count sans">(${items.length})</span>`;
+    header.onclick = ()=>{
+      if(expandedFolders.has(type)) expandedFolders.delete(type);
+      else expandedFolders.add(type);
+      renderGrid();
+    };
+    folder.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'plant-grid type-folder-body';
+    body.style.display = isOpen ? 'grid' : 'none';
+
+    items.forEach(({p,db,hs})=>{
+      const card = document.createElement('div');
+      card.className = 'plant-card status-'+hs.status;
+      let chipText;
+      if(hs.status==='now') chipText = 'Récolte en cours';
+      else if(hs.status==='soon') chipText = 'Bientôt — dans '+hs.daysUntil+' j';
+      else chipText = 'Récolte : '+formatRangeDates(hs.start, hs.end);
+
+      card.innerHTML = `
+        ${p.photo ? `<img class="card-photo" src="${p.photo}" alt="">` : ''}
+        <button class="del-btn" title="Supprimer" data-id="${p.id}">✕</button>
+        <button class="edit-btn" title="Modifier" data-id="${p.id}">✏️</button>
+        <div class="status-chip sans">${chipText}</div>
+        <h3>${db.emoji} ${escapeHtml(plantDisplayName(p))}</h3>
+        <div class="variety">${p.variety ? escapeHtml(p.variety) : 'Sans variété précisée'}</div>
+        <div class="loc sans">${p.location ? '📍 '+escapeHtml(p.location) : ''}</div>
+        <div class="care-preview sans">${db.sol}</div>
+      `;
+      card.querySelector('.del-btn').onclick = (e)=>{
+        e.stopPropagation();
+        if(confirm('Retirer '+plantDisplayName(p)+' du jardin ?')){
+          plants = plants.filter(x=>x.id!==p.id);
+          persist();
+          renderAll();
+        }
+      };
+      card.querySelector('.edit-btn').onclick = (e)=>{
+        e.stopPropagation();
+        openEdit(p.id);
+      };
+      card.onclick = ()=> openDetail(p.id);
+      body.appendChild(card);
+    });
+
+    folder.appendChild(body);
+    grid.appendChild(folder);
+  });
+}
+
+function plantDisplayName(p){
+  return (p.customName && p.customName.trim()) ? p.customName.trim() : p.type;
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ---------------- Add modal ---------------- */
+const typeSelect = document.getElementById('fruitType');
+const grpFruits = document.createElement('optgroup');
+grpFruits.label = 'Fruits';
+const grpHerbs = document.createElement('optgroup');
+grpHerbs.label = 'Plantes aromatiques';
+Object.keys(FRUIT_DB).forEach(name=>{
+  const opt = document.createElement('option');
+  opt.value = name;
+  opt.textContent = FRUIT_DB[name].emoji + ' ' + name;
+  if(FRUIT_DB[name].cat === 'aromatique') grpHerbs.appendChild(opt);
+  else grpFruits.appendChild(opt);
+});
+typeSelect.appendChild(grpFruits);
+typeSelect.appendChild(grpHerbs);
+
+function updateTypeHint(){
+  const db = FRUIT_DB[typeSelect.value];
+  const hs = harvestStatus(db.harvest[0], db.harvest[1]);
+  const pl = pruneLabel(db.prune);
+  const pruneTxt = pl ? `Taille conseillée : ${pl}.` : '';
+  document.getElementById('typeHint').textContent =
+    `Récolte (climat sud) : ${formatRangeDates(hs.start, hs.end)}. ${pruneTxt}`;
+}
+typeSelect.onchange = updateTypeHint;
+updateTypeHint();
+
+const addOverlay = document.getElementById('addOverlay');
+let editingId = null;
+let pendingPhoto = null;
+let pendingPhotoRatio = null;
+
+function readAndCompressImage(file, maxW, cb){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const scale = Math.min(1, maxW/img.width);
+      const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL('image/jpeg', 0.72), w/h);
+    };
+    img.onerror = function(){ alert("Impossible de lire cette image."); };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showPhotoPreview(dataUrl){
+  const preview = document.getElementById('photoPreview');
+  if(dataUrl){
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    document.getElementById('removePhotoBtn').style.display = 'inline-block';
+  } else {
+    preview.style.display = 'none';
+    preview.src = '';
+    document.getElementById('removePhotoBtn').style.display = 'none';
+  }
+}
+
+document.getElementById('photoInput').onchange = (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  readAndCompressImage(file, 480, (dataUrl, ratio)=>{
+    pendingPhoto = dataUrl;
+    pendingPhotoRatio = ratio;
+    showPhotoPreview(dataUrl);
+  });
+};
+document.getElementById('removePhotoBtn').onclick = ()=>{
+  pendingPhoto = null;
+  pendingPhotoRatio = null;
+  document.getElementById('photoInput').value = '';
+  showPhotoPreview(null);
+};
+
+document.getElementById('openAddBtn').onclick = ()=>{
+  editingId = null;
+  document.getElementById('addModalTitle').textContent = 'Nouvelle fiche';
+  document.getElementById('saveAddBtn').textContent = 'Créer la fiche';
+  document.getElementById('customName').value='';
+  document.getElementById('variety').value='';
+  document.getElementById('location').value='';
+  document.getElementById('plantedDate').value='';
+  document.getElementById('notes').value='';
+  document.getElementById('photoInput').value='';
+  pendingPhoto = null;
+  pendingPhotoRatio = null;
+  showPhotoPreview(null);
+  typeSelect.selectedIndex = 0;
+  updateTypeHint();
+  addOverlay.classList.remove('hidden');
+};
+
+function openEdit(id){
+  const p = plants.find(x=>x.id===id);
+  if(!p) return;
+  editingId = id;
+  document.getElementById('addModalTitle').textContent = 'Modifier la fiche';
+  document.getElementById('saveAddBtn').textContent = 'Enregistrer les modifications';
+  typeSelect.value = p.type;
+  document.getElementById('customName').value = p.customName || '';
+  document.getElementById('variety').value = p.variety || '';
+  document.getElementById('location').value = p.location || '';
+  document.getElementById('plantedDate').value = p.plantedDate || '';
+  document.getElementById('notes').value = p.notes || '';
+  document.getElementById('photoInput').value = '';
+  pendingPhoto = p.photo || null;
+  pendingPhotoRatio = p.photoRatio || null;
+  showPhotoPreview(pendingPhoto);
+  updateTypeHint();
+  addOverlay.classList.remove('hidden');
+}
+
+document.getElementById('cancelAddBtn').onclick = ()=> addOverlay.classList.add('hidden');
+addOverlay.onclick = (e)=>{ if(e.target===addOverlay) addOverlay.classList.add('hidden'); };
+
+document.getElementById('saveAddBtn').onclick = ()=>{
+  const data = {
+    type: typeSelect.value,
+    customName: document.getElementById('customName').value.trim(),
+    variety: document.getElementById('variety').value.trim(),
+    location: document.getElementById('location').value.trim(),
+    plantedDate: document.getElementById('plantedDate').value,
+    notes: document.getElementById('notes').value.trim(),
+    photo: pendingPhoto,
+    photoRatio: pendingPhotoRatio
+  };
+  if(editingId){
+    const idx = plants.findIndex(x=>x.id===editingId);
+    if(idx>-1) plants[idx] = Object.assign({id:editingId}, data);
+  } else {
+    plants.push(Object.assign({id:'p'+Date.now()+Math.random().toString(36).slice(2,7)}, data));
+  }
+  persist();
+  addOverlay.classList.add('hidden');
+  editingId = null;
+  renderAll();
+};
+
+/* ---------------- Plan de la parcelle : carte satellite en direct (Leaflet) ---------------- */
+let leafletMap = null;
+let leafletMarkersLayer = null;
+
+function initLeafletMap(){
+  if(leafletMap) return; // déjà initialisée
+  const gridData = currentGrid();
+  leafletMap = L.map('leafletMap').setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
+
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Imagery © Esri, Maxar, Earthstar Geographics',
+    maxZoom: 19
+  }).addTo(leafletMap);
+
+  leafletMarkersLayer = L.layerGroup().addTo(leafletMap);
+
+  leafletMap.on('click', (e)=>{
+    openAssignAtLatLng(e.latlng.lat, e.latlng.lng);
+  });
+
+  leafletMap.on('moveend zoomend', ()=>{
+    const g = currentGrid();
+    g.center = { lat: leafletMap.getCenter().lat, lng: leafletMap.getCenter().lng };
+    g.zoom = leafletMap.getZoom();
+    persist();
+  });
+}
+
+function statusColor(status){
+  if(status==='now') return '#b9482f';
+  if(status==='soon') return '#e08e45';
+  return '#4a5d32';
+}
+
+function renderParcelGrid(){
+  const gridData = currentGrid();
+  if(!leafletMap){
+    initLeafletMap();
+  } else {
+    leafletMap.setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
+  }
+  leafletMarkersLayer.clearLayers();
+
+  const stillValidMarkers = [];
+  gridData.markers.forEach(m=>{
+    const p = getPlantById(m.plantId);
+    if(!p) return; // référence orpheline (plant supprimé), on l'abandonne silencieusement
+    stillValidMarkers.push(m);
+    const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+    const hs = harvestStatus(db.harvest[0], db.harvest[1]);
+    const name = plantDisplayName(p);
+    const color = statusColor(hs.status);
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="background:${color};border:2px solid #fff;border-radius:50%;width:30px;height:30px;
+             display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 1px 4px rgba(0,0,0,.4);">${db.emoji}</div>
+             <div class="marker-pin-label" style="text-align:center;margin-top:2px;">${escapeHtml(name)}</div>`,
+      iconSize: [70, 46],
+      iconAnchor: [35, 15]
+    });
+
+    const marker = L.marker([m.lat, m.lng], { icon }).addTo(leafletMarkersLayer);
+    marker.bindPopup(
+      `<b>${escapeHtml(name)}</b><br>${p.variety? escapeHtml(p.variety)+'<br>' : ''}` +
+      `<button class="map-popup-btn" onclick="openDetail('${p.id}')">Voir la fiche</button> ` +
+      `<button class="map-popup-btn" style="background:#b9482f;" onclick="removeMarker('${m.plantId}')">Retirer</button>`
+    );
+  });
+  if(stillValidMarkers.length !== gridData.markers.length){
+    gridData.markers = stillValidMarkers;
+    persist();
+  }
+}
+
+function removeMarker(plantId){
+  const g = currentGrid();
+  g.markers = g.markers.filter(m=>m.plantId!==plantId);
+  persist();
+  renderParcelGrid();
+}
+
+let pendingAssignLatLng = null;
+function openAssignAtLatLng(lat, lng){
+  pendingAssignLatLng = { lat, lng };
+  const g = currentGrid();
+  const placedIds = new Set(g.markers.map(m=>m.plantId));
+  const available = plants.filter(p => !placedIds.has(p.id));
+
+  const list = document.getElementById('assignList');
+  list.innerHTML = '';
+  if(available.length===0){
+    list.innerHTML = '<div class="assign-empty">Tous vos fruits sont déjà placés sur la carte, ou le jardin est vide. Créez une nouvelle fiche pour l\'ajouter ici.</div>';
+  } else {
+    available.forEach(p=>{
+      const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+      const item = document.createElement('div');
+      item.className = 'assign-item';
+      item.innerHTML = `<span class="emoji">${db.emoji}</span><span>${escapeHtml(plantDisplayName(p))}${p.variety? ' — '+escapeHtml(p.variety):''}</span>`;
+      item.onclick = ()=>{
+        g.markers.push({ plantId: p.id, lat, lng });
+        persist();
+        document.getElementById('assignOverlay').classList.add('hidden');
+        renderParcelGrid();
+      };
+      list.appendChild(item);
+    });
+  }
+  document.getElementById('assignOverlay').classList.remove('hidden');
+}
+document.getElementById('cancelAssignBtn').onclick = ()=> document.getElementById('assignOverlay').classList.add('hidden');
+document.getElementById('assignOverlay').onclick = (e)=>{
+  if(e.target.id==='assignOverlay') document.getElementById('assignOverlay').classList.add('hidden');
+};
+
+/* Recherche d'adresse via Nominatim (OpenStreetMap), gratuit, sans clé */
+async function mapSearchPlace(){
+  const query = document.getElementById('mapSearchInput').value.trim();
+  const resultsEl = document.getElementById('mapSearchResults');
+  if(!query){ resultsEl.innerHTML = ''; return; }
+  resultsEl.innerHTML = '<div class="map-search-result-item">Recherche en cours...</div>';
+  try{
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q=' + encodeURIComponent(query));
+    const data = await res.json();
+    resultsEl.innerHTML = '';
+    if(!data.length){
+      resultsEl.innerHTML = '<div class="map-search-result-item">Aucun résultat.</div>';
+      return;
+    }
+    data.forEach(place=>{
+      const item = document.createElement('div');
+      item.className = 'map-search-result-item';
+      item.textContent = place.display_name;
+      item.onclick = ()=>{
+        const lat = parseFloat(place.lat), lng = parseFloat(place.lon);
+        const g = currentGrid();
+        g.center = { lat, lng };
+        g.zoom = 18;
+        persist();
+        leafletMap.setView([lat, lng], 18);
+        resultsEl.innerHTML = '';
+        document.getElementById('mapSearchInput').value = place.display_name;
+      };
+      resultsEl.appendChild(item);
+    });
+  }catch(e){
+    resultsEl.innerHTML = '<div class="map-search-result-item">Recherche indisponible (connexion internet nécessaire).</div>';
+  }
+}
+document.getElementById('mapSearchBtn').onclick = mapSearchPlace;
+
+/* ---------------- Detail modal ---------------- */
+const detailOverlay = document.getElementById('detailOverlay');
+let currentDetailId = null;
+function openDetail(id){
+  const p = plants.find(x=>x.id===id);
+  if(!p) return;
+  currentDetailId = id;
+  const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+  const hs = harvestStatus(db.harvest[0], db.harvest[1]);
+
+  document.getElementById('detailTitle').textContent = db.emoji+' '+plantDisplayName(p) + (p.variety? ' — '+p.variety : '');
+
+  let statusLine;
+  if(hs.status==='now') statusLine = "C'est la saison — récolte en cours ("+hs.daysLeft+" j restants environ)";
+  else if(hs.status==='soon') statusLine = "Bientôt prêt — dans "+hs.daysUntil+" jours";
+  else statusLine = "Prochaine récolte dans "+hs.daysUntil+" jours";
+
+  const pl = pruneLabel(db.prune);
+  const pruneLine = pl || "Pas de taille spécifique nécessaire";
+
+  document.getElementById('detailBody').innerHTML = `
+    ${p.photo ? `<img class="detail-photo" src="${p.photo}" alt="">` : ''}
+    ${p.customName && p.customName.trim() ? `<div class="row"><span class="sans">Type de fruit</span><span>${db.emoji} ${escapeHtml(p.type)}</span></div>` : ''}
+    <div class="row"><span class="sans">Statut</span><span>${statusLine}</span></div>
+    <div class="row"><span class="sans">Fenêtre de récolte (climat sud)</span><span>${formatRangeDates(hs.start, hs.end)}</span></div>
+    <div class="row"><span class="sans">Prochaine échéance</span><span>${fmtDate(hs.start)} → ${fmtDate(hs.end)}</span></div>
+    <div class="row"><span class="sans">Période de taille</span><span>${pruneLine}</span></div>
+    <div class="row"><span class="sans">Emplacement</span><span>${p.location ? escapeHtml(p.location) : '—'}</span></div>
+    <div class="row"><span class="sans">Planté le</span><span>${p.plantedDate ? fmtDate(new Date(p.plantedDate)) : '—'}</span></div>
+    ${p.notes ? `<div class="row"><span class="sans">Notes</span><span>${escapeHtml(p.notes)}</span></div>` : ''}
+    <div class="tech-sheet">
+      <div class="tech-sheet-title sans">Fiche technique de culture</div>
+      <div class="tech-row"><span class="tech-label sans">Sol</span><span>${db.sol}</span></div>
+      <div class="tech-row"><span class="tech-label sans">Arrosage</span><span>${db.arrosage}</span></div>
+      <div class="tech-row"><span class="tech-label sans">Fertilisation</span><span>${db.fertilisation}</span></div>
+      <div class="tech-row"><span class="tech-label sans">Maladies / ravageurs courants</span><span>${db.maladies}</span></div>
+      <div class="tech-row"><span class="tech-label sans">Comment tailler / couper</span><span>${db.taille}</span></div>
+    </div>
+    <div class="tip-box sans"><b>Comment savoir qu'il est prêt</b>${db.tip}</div>
+  `;
+  detailOverlay.classList.remove('hidden');
+}
+document.getElementById('closeDetailBtn').onclick = ()=> detailOverlay.classList.add('hidden');
+detailOverlay.onclick = (e)=>{ if(e.target===detailOverlay) detailOverlay.classList.add('hidden'); };
+
+document.getElementById('editFromDetailBtn').onclick = ()=>{
+  if(!currentDetailId) return;
+  detailOverlay.classList.add('hidden');
+  openEdit(currentDetailId);
+};
+document.getElementById('printOneBtn').onclick = ()=>{
+  const p = plants.find(x=>x.id===currentDetailId);
+  if(p) handlePdf([p]);
+};
+
+/* ---------------- Capacité de téléchargement (fournie par l'hôte) ---------------- */
+let downloadsCap = null;
+(async function initCapabilities(){
+  try{
+    if(window.claude && typeof window.claude.use === 'function'){
+      downloadsCap = await window.claude.use('downloads');
+    }
+  }catch(e){ downloadsCap = null; }
+})();
+
+function slugify(s){
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'fruit';
+}
+
+/* ---------------- Génération du PDF (mise en page pro, sans passer par l'impression) ---------------- */
+function generatePdfBlob(list, gardenName){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const pageW = 210, pageH = 297, margin = 18;
+
+  // ---------- Page de garde ----------
+  doc.setFillColor(74,93,50);
+  doc.rect(0,0,pageW,55,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('times','bold');
+  doc.setFontSize(26);
+  doc.text('Le Carnet du Verger', margin, 28);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(11);
+  doc.text(gardenName || 'Mon jardin', margin, 38);
+  doc.setFontSize(9.5);
+  doc.text(`Fiches d'entretien et de récolte — édité le ${fmtDate(today())}`, margin, 47);
+
+  let cy = 70;
+  doc.setFont('helvetica','italic');
+  doc.setFontSize(9.5);
+  doc.setTextColor(123,75,148);
+  const climLines = doc.splitTextToSize(
+    "Climat méditerranéen (sud de la France) : dates de récolte avancées d'environ 2 semaines par rapport à la moyenne nationale.",
+    pageW - 2*margin
+  );
+  doc.text(climLines, margin, cy);
+  cy += climLines.length*5 + 12;
+
+  doc.setFont('times','bold');
+  doc.setFontSize(13);
+  doc.setTextColor(43,42,36);
+  doc.text(`Sommaire — ${list.length} fiche${list.length>1?'s':''}`, margin, cy);
+  cy += 9;
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  list.forEach((p, i)=>{
+    if(cy > pageH - margin){ doc.addPage(); cy = margin; }
+    const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+    doc.text(`${i+1}.  ${plantDisplayName(p)}${p.variety? ' — '+p.variety : ''}`, margin, cy);
+    cy += 6.5;
+  });
+
+  // ---------- Une page complète par plante ----------
+  list.forEach(p=>{
+    doc.addPage();
+    let y = margin;
+    const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+    const hs = harvestStatus(db.harvest[0], db.harvest[1]);
+    const pl = pruneLabel(db.prune) || "Pas de taille spécifique nécessaire";
+
+    // Bandeau titre de page
+    doc.setFillColor(74,93,50);
+    doc.rect(0,0,pageW,24,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('times','bold');
+    doc.setFontSize(17);
+    doc.text(plantDisplayName(p) + (p.variety? ' — '+p.variety : ''), margin, 16);
+    y = 34;
+
+    if(p.location || p.plantedDate){
+      doc.setFont('helvetica','italic');
+      doc.setFontSize(9);
+      doc.setTextColor(92,88,72);
+      const meta = [];
+      if(p.location) meta.push('Emplacement : '+p.location);
+      if(p.plantedDate) meta.push('Planté le '+fmtDate(new Date(p.plantedDate)));
+      doc.text(meta.join('   ·   '), margin, y);
+      y += 7;
+    }
+
+    // Photo, si présente : cadrée à droite, texte à sa gauche
+    let textWidth = pageW - 2*margin;
+    let photoBottom = y;
+    if(p.photo){
+      const maxW = 62, maxH = 50;
+      let imgW = maxW, imgH = maxW / (p.photoRatio || 1.33);
+      if(imgH > maxH){ imgH = maxH; imgW = maxH * (p.photoRatio || 1.33); }
+      const imgX = pageW - margin - imgW;
+      try{ doc.addImage(p.photo, 'JPEG', imgX, y, imgW, imgH); }catch(e){ /* image illisible, on continue sans */ }
+      photoBottom = y + imgH + 4;
+      textWidth = pageW - 2*margin - imgW - 8;
+    }
+
+    const rows = [];
+    if(p.customName && p.customName.trim()) rows.push(['Type de fruit', p.type]);
+    rows.push(
+      ['Récolte', formatRangeDates(hs.start, hs.end)],
+      ['Période de taille', pl],
+      ['Sol', db.sol],
+      ['Arrosage', db.arrosage],
+      ['Fertilisation', db.fertilisation],
+      ['Maladies / ravageurs', db.maladies],
+      ['Comment tailler / couper', db.taille],
+      ['Signe de maturité', db.tip]
+    );
+    if(p.notes) rows.push(['Notes', p.notes]);
+
+    doc.setFontSize(9.5);
+    rows.forEach(([label, value])=>{
+      const valueLines = doc.splitTextToSize(value, textWidth - 48);
+      doc.setFont('helvetica','bold');
+      doc.setTextColor(74,93,50);
+      doc.text(label, margin, y);
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(43,42,36);
+      doc.text(valueLines, margin+48, y);
+      y += Math.max(valueLines.length*4.6 + 2.5, 6);
+    });
+    y = Math.max(y, photoBottom);
+  });
+
+  return doc.output('blob');
+}
+
+function currentGardenName(){
+  const g = STATE.gardens.find(x=>x.id===STATE.currentGardenId);
+  return g ? g.name : 'Mon jardin';
+}
+
+async function handlePdf(list){
+  if(!list.length){
+    alert('Ajoutez au moins un fruit au jardin avant de générer un PDF.');
+    return;
+  }
+  const blob = generatePdfBlob(list, currentGardenName());
+  const filename = list.length===1
+    ? `fiche-${slugify(list[0].type)}.pdf`
+    : `carnet-du-verger-${slugify(currentGardenName())}.pdf`;
+
+  if(downloadsCap){
+    try{
+      await downloadsCap.save({ filename, data: blob });
+      return;
+    }catch(e){
+      if(e && e.code === 'declined') return;
+      console.error('Téléchargement impossible', e);
+    }
+  }
+  // Repli si la capacité n'est pas disponible : ouvre le PDF dans un nouvel onglet
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+}
+
+document.getElementById('printAllBtn').onclick = ()=>{
+  const sorted = plants.slice().sort((a,b)=> a.type.localeCompare(b.type,'fr'));
+  handlePdf(sorted);
+};
+
+/* ---------------- Init ---------------- */
+renderAll();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</body>
+</html>
