@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Le Carnet du Verger</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon-64.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#4a5d32">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Le Verger">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <style>
 :root{
@@ -430,7 +437,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     <button class="add-fab secondary-fab sans" id="printAllBtn">📥 Télécharger le carnet PDF</button>
   </div>
 
-  <footer>Vos données restent sur cet appareil, dans ce navigateur.</footer>
+  <footer>Vos données restent sur cet appareil, dans ce navigateur. <span class="sans" id="appVersion"></span></footer>
 </div>
 
 <!-- Add / edit plant modal -->
@@ -1906,6 +1913,15 @@ document.getElementById('printAllBtn').onclick = ()=>{
 };
 
 /* ---------------- Init ---------------- */
+const APP_VERSION = 'v1.0.0';
+document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{ /* pas grave si indisponible */ });
+  });
+}
+
 renderAll();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
