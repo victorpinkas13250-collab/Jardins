@@ -19,7 +19,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   // Ne jamais mettre en cache les appels vers les services externes (carte, recherche d'adresse)
-  if (event.request.url.includes('arcgisonline.com') || event.request.url.includes('nominatim.openstreetmap.org') || event.request.url.includes('cdnjs.cloudflare.com')) {
+  if (event.request.url.includes('arcgisonline.com') || event.request.url.includes('nominatim.openstreetmap.org') || event.request.url.includes('tile.openstreetmap.org') || event.request.url.includes('cdnjs.cloudflare.com')) {
     return;
   }
   event.respondWith(

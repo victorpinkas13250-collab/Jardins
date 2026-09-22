@@ -422,6 +422,8 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
       <span><i class="dot dot-soon"></i> bientôt</span>
       <span><i class="dot dot-wait"></i> en attente</span>
       <span class="map-hint">Tape sur la carte pour placer un fruit</span>
+      <button class="garden-btn sans" id="toggleMarkersBtn" style="margin-left:auto;">👁️ Masquer les fruits</button>
+      <button class="garden-btn sans" id="toggleLayerBtn">🗺️ Hybride</button>
     </div>
     <div id="leafletMap" class="leaflet-map-box"></div>
   </div>
@@ -1543,15 +1545,30 @@ document.getElementById('saveAddBtn').onclick = ()=>{
 let leafletMap = null;
 let leafletMarkersLayer = null;
 
+let satelliteLayer = null;
+let streetLayer = null;
+let hybridLabelsLayer = null;
+let currentBaseLayer = 'satellite';
+
 function initLeafletMap(){
   if(leafletMap) return; // déjà initialisée
   const gridData = currentGrid();
   leafletMap = L.map('leafletMap').setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
 
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Imagery © Esri, Maxar, Earthstar Geographics',
     maxZoom: 19
-  }).addTo(leafletMap);
+  });
+  streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  });
+  // Calque de labels (routes, lieux) transparent, posé par-dessus le satellite pour la vue hybride
+  hybridLabelsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Esri',
+    maxZoom: 19
+  });
+  satelliteLayer.addTo(leafletMap);
 
   leafletMarkersLayer = L.layerGroup().addTo(leafletMap);
 
@@ -1565,6 +1582,37 @@ function initLeafletMap(){
     g.zoom = leafletMap.getZoom();
     persist();
   });
+}
+
+const BASE_LAYER_SEQUENCE = ['satellite', 'hybrid', 'street'];
+const BASE_LAYER_LABELS = {
+  satellite: '🛰️ Satellite',
+  hybrid: '🗺️ Hybride',
+  street: '📍 Plan'
+};
+function toggleBaseLayer(){
+  if(!leafletMap) return;
+  const btn = document.getElementById('toggleLayerBtn');
+
+  // retire tout ce qui est actuellement affiché
+  leafletMap.removeLayer(satelliteLayer);
+  leafletMap.removeLayer(streetLayer);
+  leafletMap.removeLayer(hybridLabelsLayer);
+
+  const idx = BASE_LAYER_SEQUENCE.indexOf(currentBaseLayer);
+  currentBaseLayer = BASE_LAYER_SEQUENCE[(idx + 1) % BASE_LAYER_SEQUENCE.length];
+
+  if(currentBaseLayer === 'satellite'){
+    satelliteLayer.addTo(leafletMap);
+  } else if(currentBaseLayer === 'hybrid'){
+    satelliteLayer.addTo(leafletMap);
+    hybridLabelsLayer.addTo(leafletMap);
+  } else {
+    streetLayer.addTo(leafletMap);
+  }
+  // Le bouton affiche la PROCHAINE vue (celle sur laquelle on va basculer au prochain tap)
+  const nextIdx = (BASE_LAYER_SEQUENCE.indexOf(currentBaseLayer) + 1) % BASE_LAYER_SEQUENCE.length;
+  btn.textContent = BASE_LAYER_LABELS[BASE_LAYER_SEQUENCE[nextIdx]];
 }
 
 function statusColor(status){
@@ -1689,6 +1737,21 @@ async function mapSearchPlace(){
   }
 }
 document.getElementById('mapSearchBtn').onclick = mapSearchPlace;
+
+let markersVisible = true;
+document.getElementById('toggleMarkersBtn').onclick = ()=>{
+  markersVisible = !markersVisible;
+  const btn = document.getElementById('toggleMarkersBtn');
+  if(markersVisible){
+    if(leafletMap && leafletMarkersLayer) leafletMap.addLayer(leafletMarkersLayer);
+    btn.textContent = '👁️ Masquer les fruits';
+  } else {
+    if(leafletMap && leafletMarkersLayer) leafletMap.removeLayer(leafletMarkersLayer);
+    btn.textContent = '👁️ Afficher les fruits';
+  }
+};
+
+document.getElementById('toggleLayerBtn').onclick = toggleBaseLayer;
 
 /* ---------------- Detail modal ---------------- */
 const detailOverlay = document.getElementById('detailOverlay');
