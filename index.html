@@ -1720,7 +1720,6 @@ function initLeafletMap(){
   leafletMarkersLayer = L.layerGroup().addTo(leafletMap);
 
   leafletMap.on('click', (e)=>{
-    if(currentGrid().frozenImage) return; // fond figé : pas de placement tant qu'on n'a pas dégelé
     openAssignAtLatLng(e.latlng.lat, e.latlng.lng);
   });
 
@@ -2254,7 +2253,7 @@ document.getElementById('printAllBtn').onclick = ()=>{
 };
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v1.4.1';
+const APP_VERSION = 'v1.4.2';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
