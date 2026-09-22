@@ -272,6 +272,7 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 }
 .leaflet-map-box{
   width:100%;height:420px;border-radius:3px;border:1px solid var(--line);
+  position:relative;z-index:0;
 }
 .marker-pin-label{
   font-size:.65rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.8);color:#fff;
@@ -341,7 +342,7 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 .modal-overlay{
   position:fixed;inset:0;background:rgba(43,42,36,.55);
   display:flex;align-items:flex-start;justify-content:center;
-  padding:30px 16px;overflow-y:auto;z-index:50;
+  padding:30px 16px;overflow-y:auto;z-index:9999;
 }
 .modal-overlay.hidden{display:none;}
 .modal{
@@ -2253,7 +2254,7 @@ document.getElementById('printAllBtn').onclick = ()=>{
 };
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v1.4.2';
+const APP_VERSION = 'v1.4.3';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
