@@ -1699,7 +1699,15 @@ let frozenOverlay = null;
 function initLeafletMap(){
   if(leafletMap) return; // déjà initialisée
   const gridData = currentGrid();
-  leafletMap = L.map('leafletMap', { maxZoom: 22, minZoom: 2 }).setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
+  leafletMap = L.map('leafletMap', {
+    maxZoom: 22,
+    minZoom: 2,
+    zoomSnap: 0.25,       // zoom fluide par petits pas, pas juste des paliers entiers
+    zoomDelta: 0.5,       // les boutons +/- avancent aussi par petits pas
+    wheelPxPerZoomLevel: 100, // molette plus progressive
+    touchZoom: true,      // pincer pour zoomer (activé explicitement)
+    bounceAtZoomLimits: false
+  }).setView([gridData.center.lat, gridData.center.lng], gridData.zoom || 13);
 
   Object.keys(LAYER_DEFS).forEach(key=>{
     mapLayers[key] = L.tileLayer(LAYER_DEFS[key].url, {
@@ -2246,7 +2254,7 @@ document.getElementById('printAllBtn').onclick = ()=>{
 };
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v1.4.0';
+const APP_VERSION = 'v1.4.1';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
