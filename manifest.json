@@ -13,5 +13,28 @@
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Voir les tâches",
+      "short_name": "Tâches",
+      "description": "Voir les tâches d'entretien en attente",
+      "url": "./index.html?goto=tasks",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ajouter un fruit",
+      "short_name": "Ajouter",
+      "description": "Créer une nouvelle fiche",
+      "url": "./index.html?goto=add",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Plan de la parcelle",
+      "short_name": "Plan",
+      "description": "Voir la carte du jardin",
+      "url": "./index.html?goto=map",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

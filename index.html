@@ -124,6 +124,14 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
   padding:7px 10px;border:1px solid var(--line);border-radius:3px;font-family:inherit;font-size:.85rem;
   background:var(--cream);color:var(--bark);
 }
+.stats-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;
+}
+.stat-card{
+  background:var(--cream);border:1px solid var(--line);border-radius:3px;padding:14px 16px;text-align:center;
+}
+.stat-card .stat-value{font-size:1.5rem;font-weight:700;color:var(--olive-dark);font-family:'Iowan Old Style',Georgia,serif;}
+.stat-card .stat-label{font-family:inherit;font-size:.72rem;color:var(--bark-soft);margin-top:4px;}
 .export-reminder{
   display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   background:var(--sun-soft);border:1px solid var(--sun);border-radius:3px;
@@ -384,6 +392,12 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 .assign-item:hover{background:var(--sage-2);}
 .assign-item .emoji{font-size:1.2rem;}
 .assign-empty{color:var(--bark-soft);font-style:italic;font-size:.9rem;padding:10px 0;}
+.help-modal{max-width:600px;}
+.help-content{max-height:60vh;overflow-y:auto;padding-right:4px;}
+.help-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line);}
+.help-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.help-section h3{margin:0 0 6px;font-size:.95rem;color:var(--olive-dark);}
+.help-section p{margin:0;font-size:.85rem;line-height:1.5;color:var(--bark);}
 
 .edit-btn{
   position:absolute;top:10px;right:34px;
@@ -492,6 +506,9 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
   <div class="inner">
     <h1>Le Carnet <span class="leaf">du Verger</span></h1>
     <div class="date-badge sans" id="todayBadge"></div>
+  </div>
+  <div class="inner garden-switch-row">
+    <button class="garden-btn sans" id="helpBtn" style="font-weight:700;">❓ Comment ça marche</button>
   </div>
   <div class="inner garden-switch-row">
     <select id="gardenSelect" class="sans"></select>
@@ -620,6 +637,9 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     <div id="chartEmptyState" class="empty-hint sans" style="display:none;padding:20px 0;text-align:center;">Pas encore assez de données de récolte. Ajoute des entrées dans le journal de tes fiches.</div>
   </div>
 
+  <div class="section-title">📈 Statistiques</div>
+  <div id="statsPanel" class="stats-grid"></div>
+
   <div class="section-title">Mes fiches du jardin <span class="count sans" id="plantCount"></span></div>
   <input type="text" id="fichesSearchInput" class="fiches-search sans" placeholder="🔍 Rechercher un fruit, une variété, un emplacement...">
   <div id="gardenGrid" class="plant-grid"></div>
@@ -701,6 +721,69 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     <div id="assignList" class="assign-list"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="cancelAssignBtn">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Guide d'utilisation -->
+<div class="modal-overlay hidden" id="helpOverlay">
+  <div class="modal help-modal">
+    <h2>❓ Comment ça marche</h2>
+    <div class="help-content sans">
+
+      <div class="help-section">
+        <h3>🍑 Les fiches</h3>
+        <p>Bouton <b>"+ Créer une fiche"</b> en bas de page. Choisis un fruit ou une aromatique, donne-lui un nom si tu en as plusieurs du même type (ex. "Figuier 1", "Figuier 2"), ajoute une variété, un emplacement, une photo. Chaque fiche te donne : la période de récolte, comment tailler, entretien (sol/arrosage/engrais), maladies courantes, et les bons/mauvais voisins.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>📍 Plusieurs jardins</h3>
+        <p>Le menu déroulant en haut te permet de créer plusieurs jardins (ex. "Montpellier", "Sète"), chacun avec ses propres fiches, sa carte et ses tâches.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>🗺️ Plan de la parcelle</h3>
+        <p>Cherche ton adresse dans la barre de recherche. Choisis parmi 8 fonds de carte différents (satellite, plan, topographique...), mélange-les avec les curseurs d'opacité. Tape sur la carte pour placer un fruit à son emplacement réel — le point change de couleur selon la saison (rouge = à récolter). Une fois content du rendu, <b>"Figer le fond de carte"</b> le fige en image fixe (plus besoin d'internet pour le revoir).</p>
+      </div>
+
+      <div class="help-section">
+        <h3>✅ Tâches & 📒 Journal des récoltes</h3>
+        <p>Dans chaque fiche : ajoute des tâches avec une date d'échéance (une tâche "Tailler" est créée automatiquement), et note tes récoltes (date + kg) pour garder un historique. Le panneau "Tâches" en page d'accueil regroupe tout, triées par échéance.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>📊 Graphique & 📈 Statistiques</h3>
+        <p>À partir de ton journal des récoltes : compare tes récoltes année par année, et vois d'un coup d'œil ton fruit le plus productif.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>🌦️ Météo</h3>
+        <p>Basée sur l'emplacement de ta carte. Alerte automatique en cas de gel, et une tâche "Arroser" est créée toute seule si aucune pluie n'est prévue plusieurs jours.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>📤 Export, 📥 Import, 🔗 Partage</h3>
+        <p><b>Exporter</b> sauvegarde un jardin en fichier — à faire régulièrement pour ne rien perdre si tu changes de téléphone (l'appli te le rappelle si tu oublies). <b>Importer</b> permet de récupérer ce fichier sur un autre appareil. <b>Partager (lecture seule)</b> génère une page à envoyer à quelqu'un qui n'a pas besoin d'installer l'appli.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>📥 PDF & 🏷️ Étiquettes</h3>
+        <p>"Télécharger le carnet PDF" fait une fiche détaillée par fruit. "Étiquettes à imprimer" génère des petites étiquettes à planter dans le sol. "Plan + étiquettes" combine la carte et les étiquettes dans un seul PDF.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>🌙 Mode sombre, 🔔 Rappels, 📱 Raccourcis</h3>
+        <p>Mode sombre pour le soir. Les rappels envoient une notification si l'appli est ouverte/récente (pas une vraie notification appli fermée depuis longtemps, ça demanderait un serveur). Reste appuyé sur l'icône de l'appli sur ton téléphone pour un accès rapide aux tâches, à l'ajout, ou au plan.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>💾 Où sont mes données ?</h3>
+        <p>Tout reste sur ton téléphone, dans ce navigateur. Rien n'est envoyé sur internet à part la carte, la météo et la recherche d'adresse. Pense à exporter régulièrement.</p>
+      </div>
+
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="closeHelpBtn">J'ai compris</button>
     </div>
   </div>
 </div>
@@ -1693,6 +1776,45 @@ function renderHarvestChart(){
 }
 document.getElementById('chartFilterSelect').addEventListener('change', renderHarvestChart);
 
+/* ---------------- Statistiques globales ---------------- */
+function renderStats(){
+  const panel = document.getElementById('statsPanel');
+  let totalKg = 0, harvestCount = 0;
+  const byType = {};
+
+  plants.forEach(p=>{
+    (p.harvestLog||[]).forEach(e=>{
+      const qty = parseFloat(e.qty) || 0;
+      totalKg += qty;
+      harvestCount++;
+      byType[p.type] = (byType[p.type]||0) + qty;
+    });
+  });
+
+  let topType = '—', topQty = 0;
+  Object.keys(byType).forEach(t=>{
+    if(byType[t] > topQty){ topQty = byType[t]; topType = t; }
+  });
+
+  const avg = harvestCount ? (totalKg/harvestCount) : 0;
+  const typesCount = new Set(plants.map(p=>p.type)).size;
+
+  const cards = [
+    { value: totalKg.toFixed(1)+' kg', label: 'Récolté au total' },
+    { value: harvestCount, label: 'Récoltes enregistrées' },
+    { value: topType==='—' ? '—' : topType, label: 'Fruit le plus productif' + (topType!=='—' ? ` (${topQty.toFixed(1)} kg)` : '') },
+    { value: avg.toFixed(1)+' kg', label: 'Moyenne par récolte' },
+    { value: plants.length, label: 'Fruits dans ce jardin' },
+    { value: typesCount, label: 'Types de fruits différents' }
+  ];
+
+  panel.innerHTML = cards.map(c=>`
+    <div class="stat-card">
+      <div class="stat-value">${c.value}</div>
+      <div class="stat-label">${c.label}</div>
+    </div>`).join('');
+}
+
 async function loadWeather(){
   const box = document.getElementById('weatherBox');
   const g = currentGrid();
@@ -1902,6 +2024,7 @@ function renderAll(){
   checkAndNotify();
   renderChartFilter();
   renderHarvestChart();
+  renderStats();
 }
 
 function renderTasksPanel(){
@@ -2233,6 +2356,7 @@ function addHarvestEntry(plantId){
   openDetail(plantId);
   renderChartFilter();
   renderHarvestChart();
+  renderStats();
 }
 function deleteHarvestEntry(plantId, entryId){
   const p = getPlantById(plantId);
@@ -2241,6 +2365,7 @@ function deleteHarvestEntry(plantId, entryId){
   persist();
   openDetail(plantId);
   renderHarvestChart();
+  renderStats();
 }
 
 /* ---------------- Galerie photo (évolution dans le temps) ---------------- */
@@ -2768,6 +2893,12 @@ function openAssignAtLatLng(lat, lng){
   document.getElementById('assignOverlay').classList.remove('hidden');
 }
 document.getElementById('cancelAssignBtn').onclick = ()=> document.getElementById('assignOverlay').classList.add('hidden');
+
+document.getElementById('helpBtn').onclick = ()=> document.getElementById('helpOverlay').classList.remove('hidden');
+document.getElementById('closeHelpBtn').onclick = ()=> document.getElementById('helpOverlay').classList.add('hidden');
+document.getElementById('helpOverlay').onclick = (e)=>{
+  if(e.target.id==='helpOverlay') document.getElementById('helpOverlay').classList.add('hidden');
+};
 document.getElementById('assignOverlay').onclick = (e)=>{
   if(e.target.id==='assignOverlay') document.getElementById('assignOverlay').classList.add('hidden');
 };
@@ -3234,7 +3365,7 @@ document.getElementById('combinedPdfBtn').onclick = generateCombinedPdf;
 
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v1.7.0';
+const APP_VERSION = 'v1.9.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
@@ -3250,6 +3381,28 @@ document.getElementById('fichesSearchInput').addEventListener('input', (e)=>{
 
 renderAll();
 loadWeather();
+
+/* ---------------- Raccourcis rapides (appui long sur l'icône, ?goto=...) ---------------- */
+(function handleShortcut(){
+  const params = new URLSearchParams(window.location.search);
+  const goto = params.get('goto');
+  if(!goto) return;
+  setTimeout(()=>{
+    if(goto === 'add'){
+      document.getElementById('openAddBtn').click();
+    } else if(goto === 'tasks'){
+      document.querySelector('.tasks-panel').scrollIntoView({behavior:'smooth', block:'start'});
+    } else if(goto === 'map'){
+      document.getElementById('leafletMap').scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  }, 300);
+})();
+
+/* Affiche le guide automatiquement à la toute première visite */
+if(!localStorage.getItem('verger-help-seen') && plants.length === 0){
+  localStorage.setItem('verger-help-seen', '1');
+  setTimeout(()=> document.getElementById('helpOverlay').classList.remove('hidden'), 400);
+}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
