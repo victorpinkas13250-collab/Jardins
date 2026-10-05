@@ -472,6 +472,11 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
   margin-top:14px;padding:12px 14px;background:var(--sage-2);border-radius:3px;font-size:.9rem;
 }
 .detail-body .tip-box b{display:block;font-family:inherit;font-size:.78rem;color:var(--olive-dark);margin-bottom:4px;}
+.learn-more-link{
+  display:block;margin-top:10px;padding:10px 14px;background:var(--sage-2);color:var(--olive-dark);
+  border-radius:3px;font-size:.85rem;text-decoration:none;font-weight:600;text-align:center;
+}
+.learn-more-link:hover{background:var(--line);}
 .tech-sheet{
   margin-top:16px;border:1px solid var(--olive);border-radius:3px;overflow:hidden;
 }
@@ -1619,6 +1624,7 @@ function generateShareHTML(gardenName, plantsList){
         <tr><th>Signe de maturité</th><td>${db.tip}</td></tr>
         ${p.notes?`<tr><th>Notes</th><td>${escapeHtml(p.notes)}</td></tr>`:''}
       </table>
+      <p style="margin-top:10px;"><a href="${buildLearnMoreUrl(p.type)}" target="_blank" rel="noopener">📖 Lire de vrais articles sur l'entretien du ${escapeHtml(p.type.toLowerCase())}</a></p>
       ${tasksHTML?`<div class="s-section-title">Tâches</div>${tasksHTML}`:''}
       ${logHTML?`<div class="s-section-title">Journal des récoltes</div>${logHTML}`:''}
     </section>`;
@@ -2337,6 +2343,14 @@ function renderGrid(){
     folder.appendChild(body);
     grid.appendChild(folder);
   });
+}
+
+/* Lien de recherche ciblé sur des sites de jardinage reconnus (pas de lien individuel non vérifiable) */
+function buildLearnMoreUrl(fruitType){
+  const sites = ['rustica.fr','gerbeaud.com','promessedefleurs.com','jardiner-malin.fr','gamm-vert.fr'];
+  const siteFilter = sites.map(s=>'site:'+s).join(' OR ');
+  const query = `${fruitType} entretien taille récolte (${siteFilter})`;
+  return 'https://www.google.com/search?q=' + encodeURIComponent(query);
 }
 
 function plantDisplayName(p){
@@ -3095,6 +3109,7 @@ function openDetail(id){
       <div class="tech-row"><span class="tech-label sans">🚫 À éviter à proximité</span><span>${db.eviter}</span></div>
     </div>
     <div class="tip-box sans"><b>Comment savoir qu'il est prêt</b>${db.tip}</div>
+    <a class="learn-more-link sans" href="${buildLearnMoreUrl(p.type)}" target="_blank" rel="noopener">📖 Lire de vrais articles sur l'entretien du ${escapeHtml(p.type.toLowerCase())}</a>
     <div class="detail-section">
       <div class="detail-section-title sans">✅ Tâches d'entretien</div>
       <div id="taskListBox">${buildTasksHTML(p)}</div>
@@ -3465,7 +3480,7 @@ document.getElementById('combinedPdfBtn').onclick = generateCombinedPdf;
 
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v2.0.0';
+const APP_VERSION = 'v2.1.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
