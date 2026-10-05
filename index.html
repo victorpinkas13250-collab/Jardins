@@ -132,6 +132,28 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 }
 .stat-card .stat-value{font-size:1.5rem;font-weight:700;color:var(--olive-dark);font-family:'Iowan Old Style',Georgia,serif;}
 .stat-card .stat-label{font-family:inherit;font-size:.72rem;color:var(--bark-soft);margin-top:4px;}
+.calendar-panel{background:var(--cream);border:1px solid var(--line);border-radius:3px;padding:16px;}
+.calendar-scroll{overflow-x:auto;}
+.calendar-grid{display:grid;grid-template-columns:140px repeat(12,42px);gap:2px;width:max-content;min-width:100%;}
+.cal-head{
+  font-family:inherit;font-size:.68rem;color:var(--bark-soft);text-align:center;
+  padding:6px 2px;font-weight:600;
+}
+.cal-rowlabel{
+  font-family:inherit;font-size:.8rem;color:var(--bark);display:flex;align-items:center;gap:6px;
+  padding:4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;
+}
+.cal-rowlabel:hover{color:var(--olive-dark);}
+.cal-cell{height:26px;border-radius:2px;background:var(--sage-2);position:relative;}
+.cal-cell.cal-harvest{background:var(--olive);}
+.cal-cell.cal-harvest.cal-south{background:var(--sun);}
+.cal-cell.cal-prune::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--fig);border-radius:0 0 2px 2px;
+}
+.calendar-legend{display:flex;gap:16px;margin-top:12px;font-size:.78rem;color:var(--bark-soft);}
+.calendar-legend span{display:flex;align-items:center;gap:5px;}
+.dot-harvest-cal{width:10px;height:10px;border-radius:2px;background:var(--olive);display:inline-block;}
+.dot-prune-cal{width:10px;height:4px;border-radius:2px;background:var(--fig);display:inline-block;}
 .export-reminder{
   display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   background:var(--sun-soft);border:1px solid var(--sun);border-radius:3px;
@@ -625,6 +647,17 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
         <button class="btn btn-secondary" id="closeViewFullBtn">Fermer</button>
         <button class="btn btn-secondary sans" id="deleteViewBtn" style="color:var(--danger);">🗑️ Supprimer cette vue</button>
       </div>
+    </div>
+  </div>
+
+  <div class="section-title">📅 Vue calendrier annuel</div>
+  <div class="calendar-panel">
+    <div class="calendar-scroll">
+      <div id="calendarGrid" class="calendar-grid"></div>
+    </div>
+    <div class="calendar-legend sans">
+      <span><i class="dot dot-harvest-cal"></i> récolte</span>
+      <span><i class="dot dot-prune-cal"></i> taille</span>
     </div>
   </div>
 
@@ -1815,6 +1848,72 @@ function renderStats(){
     </div>`).join('');
 }
 
+/* ---------------- Vue calendrier annuel ---------------- */
+function monthsInWindow(startMonth, endMonth, yearStart){
+  // retourne l'ensemble des mois (1-12) couverts par la fenêtre décalée climat sud, gère le passage d'année
+  const w = windowForYear(startMonth, endMonth, yearStart);
+  const months = new Set();
+  let cur = new Date(w.start.getFullYear(), w.start.getMonth(), 1);
+  const end = new Date(w.end.getFullYear(), w.end.getMonth(), 1);
+  let guard = 0;
+  while(cur <= end && guard < 24){
+    months.add(cur.getMonth()+1);
+    cur.setMonth(cur.getMonth()+1);
+    guard++;
+  }
+  return months;
+}
+
+function renderCalendar(){
+  const grid = document.getElementById('calendarGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+
+  const monthNames = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  const corner = document.createElement('div');
+  grid.appendChild(corner);
+  monthNames.forEach(m=>{
+    const h = document.createElement('div');
+    h.className = 'cal-head';
+    h.textContent = m;
+    grid.appendChild(h);
+  });
+
+  if(plants.length===0){
+    const empty = document.createElement('div');
+    empty.className = 'empty-hint sans';
+    empty.style.gridColumn = '1 / -1';
+    empty.style.padding = '10px 4px';
+    empty.textContent = 'Ajoute des fruits pour voir leur calendrier ici.';
+    grid.appendChild(empty);
+    return;
+  }
+
+  const y = today().getFullYear();
+  const sorted = plants.slice().sort((a,b)=> a.type.localeCompare(b.type,'fr'));
+  sorted.forEach(p=>{
+    const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+    const label = document.createElement('div');
+    label.className = 'cal-rowlabel sans';
+    label.textContent = db.emoji + ' ' + plantDisplayName(p);
+    label.onclick = ()=> openDetail(p.id);
+    grid.appendChild(label);
+
+    const harvestMonths = monthsInWindow(db.harvest[0], db.harvest[1], y);
+    const pruneMonths = db.prune ? monthsInWindow(db.prune[0], db.prune[1], y) : new Set();
+
+    for(let m=1; m<=12; m++){
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell';
+      if(harvestMonths.has(m)) cell.classList.add('cal-harvest');
+      if(pruneMonths.has(m)) cell.classList.add('cal-prune');
+      cell.title = `${plantDisplayName(p)} — ${monthNames[m-1]}${harvestMonths.has(m)?' (récolte)':''}${pruneMonths.has(m)?' (taille)':''}`;
+      cell.onclick = ()=> openDetail(p.id);
+      grid.appendChild(cell);
+    }
+  });
+}
+
 async function loadWeather(){
   const box = document.getElementById('weatherBox');
   const g = currentGrid();
@@ -2025,6 +2124,7 @@ function renderAll(){
   renderChartFilter();
   renderHarvestChart();
   renderStats();
+  renderCalendar();
 }
 
 function renderTasksPanel(){
@@ -3365,7 +3465,7 @@ document.getElementById('combinedPdfBtn').onclick = generateCombinedPdf;
 
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v1.9.0';
+const APP_VERSION = 'v2.0.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
