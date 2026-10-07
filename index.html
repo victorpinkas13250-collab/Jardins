@@ -422,11 +422,39 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 .help-section p{margin:0;font-size:.85rem;line-height:1.5;color:var(--bark);}
 
 .edit-btn{
-  position:absolute;top:10px;right:34px;
+  position:absolute;top:10px;right:58px;
   background:none;border:none;color:var(--bark-soft);
   font-size:.95rem;cursor:pointer;line-height:1;padding:2px 6px;
 }
 .edit-btn:hover{color:var(--fig);}
+.dup-btn{
+  position:absolute;top:10px;right:34px;
+  background:none;border:none;color:var(--bark-soft);
+  font-size:.95rem;cursor:pointer;line-height:1;padding:2px 6px;
+}
+.dup-btn:hover{color:var(--olive-dark);}
+.snackbar{
+  position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);
+  background:var(--bark);color:var(--cream);padding:12px 16px;border-radius:4px;
+  display:flex;align-items:center;gap:16px;font-size:.85rem;font-family:inherit;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+  z-index:10000;max-width:90vw;
+}
+.snackbar.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+.floating-add-btn{
+  position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+  width:56px;height:56px;border-radius:50%;
+  background:var(--olive);color:var(--sage);border:none;
+  font-size:1.8rem;line-height:1;cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:500;
+  display:flex;align-items:center;justify-content:center;
+}
+.floating-add-btn:hover{background:var(--olive-dark);}
+.floating-add-btn:active{transform:scale(.94);}
+.snackbar-action{
+  background:none;border:none;color:var(--sun);font-weight:700;cursor:pointer;font-size:.85rem;
+  white-space:nowrap;font-family:inherit;
+}
 
 .modal-overlay{
   position:fixed;inset:0;background:rgba(43,42,36,.55);
@@ -498,6 +526,7 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 .task-row.task-done .task-label{text-decoration:line-through;color:var(--bark-soft);}
 .task-row.task-overdue .task-date{color:var(--danger);font-weight:600;}
 .task-label{flex:1;}
+.task-repeat-tag{font-size:.75rem;opacity:.8;}
 .task-date{font-family:inherit;font-size:.78rem;color:var(--bark-soft);}
 .task-del-btn, .harvest-del-btn{background:none;border:none;color:var(--bark-soft);cursor:pointer;font-size:.9rem;}
 .task-del-btn:hover, .harvest-del-btn:hover{color:var(--danger);}
@@ -505,7 +534,7 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 .harvest-total{margin-top:8px;font-weight:600;color:var(--olive-dark);font-size:.85rem;}
 .detail-add-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
 .detail-add-row input[type="text"]{flex:1;min-width:140px;}
-.detail-add-row input{
+.detail-add-row input, .detail-add-row select{
   padding:7px 9px;border:1px solid var(--line);border-radius:3px;font-family:inherit;font-size:.85rem;
 }
 .gallery-grid{
@@ -520,6 +549,7 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 }
 
 footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.78rem;padding:30px 20px 10px;}
+.version-link{cursor:pointer;text-decoration:underline;}
 
 @media (max-width:560px){
   .two-col{grid-template-columns:1fr;}
@@ -536,6 +566,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
   </div>
   <div class="inner garden-switch-row">
     <button class="garden-btn sans" id="helpBtn" style="font-weight:700;">❓ Comment ça marche</button>
+    <button class="garden-btn sans" id="moreActionsToggle">⋯ Plus d'actions</button>
   </div>
   <div class="inner garden-switch-row">
     <select id="gardenSelect" class="sans"></select>
@@ -543,17 +574,22 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     <button class="garden-btn sans" id="newGardenBtn" title="Nouveau jardin">＋ Jardin</button>
     <button class="garden-btn sans danger-btn" id="deleteGardenBtn" title="Supprimer ce jardin">🗑️</button>
   </div>
-  <div class="inner garden-switch-row">
-    <button class="garden-btn sans" id="exportGardenBtn" title="Exporter ce jardin pour le transférer">📤 Exporter ce jardin</button>
-    <input type="file" id="importGardenInput" accept="application/json,.json" style="display:none;">
-    <button class="garden-btn sans" id="importGardenBtn" title="Importer un jardin reçu">📥 Importer un jardin</button>
-    <button class="garden-btn sans" id="shareGardenBtn" title="Générer une page à partager, lecture seule">🔗 Partager (lecture seule)</button>
+
+  <div id="moreActionsRow" class="more-actions-wrap" style="display:none;">
+    <div class="inner garden-switch-row">
+      <button class="garden-btn sans" id="exportGardenBtn" title="Exporter ce jardin pour le transférer">📤 Exporter ce jardin</button>
+      <input type="file" id="importGardenInput" accept="application/json,.json" style="display:none;">
+      <button class="garden-btn sans" id="importGardenBtn" title="Importer un jardin reçu">📥 Importer un jardin</button>
+      <button class="garden-btn sans" id="shareGardenBtn" title="Générer une page à partager, lecture seule">🔗 Partager (lecture seule)</button>
+      <button class="garden-btn sans" id="exportCsvBtn" title="Exporter en tableur (Excel/Sheets)">📑 Export Excel/CSV</button>
+    </div>
+    <div class="inner garden-switch-row">
+      <button class="garden-btn sans" id="notifBtn">🔔 Activer les rappels</button>
+      <button class="garden-btn sans" id="darkModeBtn">🌙 Mode sombre</button>
+      <span class="notif-hint sans">Marche seulement si l'appli reste ouverte/récente en arrière-plan — pas de vraie notification appli fermée depuis longtemps (ça demanderait un serveur).</span>
+    </div>
   </div>
-  <div class="inner garden-switch-row">
-    <button class="garden-btn sans" id="notifBtn">🔔 Activer les rappels</button>
-    <button class="garden-btn sans" id="darkModeBtn">🌙 Mode sombre</button>
-    <span class="notif-hint sans">Marche seulement si l'appli reste ouverte/récente en arrière-plan — pas de vraie notification appli fermée depuis longtemps (ça demanderait un serveur).</span>
-  </div>
+
   <div class="inner">
     <span class="climate-note">🌞 Climat méditerranéen (sud de la France) : dates de récolte avancées d'environ 2 semaines par rapport à la moyenne nationale.</span>
   </div>
@@ -564,7 +600,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
   <div id="exportReminderBanner" class="export-reminder sans" style="display:none;">
     <span id="exportReminderText"></span>
     <button class="btn btn-primary sans" id="exportReminderBtn">Exporter maintenant</button>
-    <button class="export-reminder-dismiss" id="exportReminderDismiss" title="Fermer">✕</button>
+    <button class="export-reminder-dismiss" id="exportReminderDismiss" title="Fermer" aria-label="Fermer ce rappel">✕</button>
   </div>
 
   <div class="today-panel weather-panel">
@@ -692,8 +728,10 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     <button class="add-fab secondary-fab sans" id="combinedPdfBtn">📋 Plan + étiquettes (PDF)</button>
   </div>
 
-  <footer>Vos données restent sur cet appareil, dans ce navigateur. <span class="sans" id="appVersion"></span></footer>
+  <footer>Vos données restent sur cet appareil, dans ce navigateur. <span class="sans version-link" id="appVersion"></span></footer>
 </div>
+
+<button id="floatingAddBtn" class="floating-add-btn" title="Créer une fiche" aria-label="Créer une fiche">+</button>
 
 <!-- Add / edit plant modal -->
 <div class="modal-overlay hidden" id="addOverlay">
@@ -747,7 +785,33 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     <div class="modal-actions">
       <button class="btn btn-secondary" id="closeDetailBtn">Fermer</button>
       <button class="btn btn-secondary sans" id="editFromDetailBtn">✏️ Modifier</button>
+      <button class="btn btn-secondary sans" id="moveFromDetailBtn" style="display:none;">➡️ Déplacer vers...</button>
       <button class="btn btn-primary sans" id="printOneBtn">📥 Télécharger en PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Déplacer une fiche vers un autre jardin -->
+<div class="modal-overlay hidden" id="moveOverlay">
+  <div class="modal">
+    <h2>Déplacer vers quel jardin ?</h2>
+    <div id="moveGardenList" class="assign-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancelMoveBtn">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fenêtre générique de saisie de texte (remplace prompt() natif) -->
+<div class="modal-overlay hidden" id="textPromptOverlay">
+  <div class="modal">
+    <h2 id="textPromptTitle"></h2>
+    <div class="field">
+      <input type="text" id="textPromptInput" style="width:100%;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="textPromptCancelBtn">Annuler</button>
+      <button class="btn btn-primary" id="textPromptOkBtn">Valider</button>
     </div>
   </div>
 </div>
@@ -822,6 +886,17 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary" id="closeHelpBtn">J'ai compris</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nouveautés / historique des versions -->
+<div class="modal-overlay hidden" id="changelogOverlay">
+  <div class="modal help-modal">
+    <h2>🆕 Nouveautés</h2>
+    <div id="changelogContent" class="help-content sans"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="closeChangelogBtn">Fermer</button>
     </div>
   </div>
 </div>
@@ -1528,6 +1603,7 @@ function getPlantById(id){
 }
 
 function switchGarden(id){
+  commitPendingDelete(); // évite qu'une suppression en attente d'annulation se perde en changeant de jardin
   STATE.currentGardenId = id;
   plants = STATE.data[id].plants;
   persist();
@@ -1680,6 +1756,42 @@ async function shareGardenReadOnly(){
   window.open(url, '_blank');
 }
 document.getElementById('shareGardenBtn').onclick = shareGardenReadOnly;
+
+/* ---------------- Export CSV (tableur) ---------------- */
+function csvEscape(v){
+  const s = (v===undefined || v===null) ? '' : String(v);
+  if(/[",\n;]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+async function exportCsv(){
+  if(!plants.length){
+    alert('Ajoute au moins un fruit avant d\'exporter.');
+    return;
+  }
+  const headers = ['Type','Nom personnalisé','Variété','Emplacement','Date de plantation','Notes','Total récolté (kg)','Nombre de récoltes','Tâches en attente'];
+  const rows = plants.map(p=>{
+    const totalKg = (p.harvestLog||[]).reduce((s,e)=> s + (parseFloat(e.qty)||0), 0);
+    const pending = (p.tasks||[]).filter(t=>!t.done).length;
+    return [
+      p.type, p.customName||'', p.variety||'', p.location||'',
+      p.plantedDate||'', p.notes||'',
+      totalKg.toFixed(1), (p.harvestLog||[]).length, pending
+    ];
+  });
+  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(';')).join('\r\n');
+  const bom = '\uFEFF'; // pour qu'Excel affiche correctement les accents
+  const g = STATE.gardens.find(x=>x.id===STATE.currentGardenId);
+  const filename = `jardin-${slugify(g ? g.name : 'export')}.csv`;
+
+  if(downloadsCap){
+    try{ await downloadsCap.save({ filename, data: bom + csv }); return; }
+    catch(e){ if(e && e.code==='declined') return; console.error(e); }
+  }
+  const blob = new Blob([bom + csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+}
+document.getElementById('exportCsvBtn').onclick = exportCsv;
 
 function markExported(){
   STATE.lastExportDate = new Date().toISOString().slice(0,10);
@@ -2176,13 +2288,11 @@ function renderGardenSwitcher(){
 }
 document.getElementById('gardenSelect').onchange = (e)=> switchGarden(e.target.value);
 document.getElementById('newGardenBtn').onclick = ()=>{
-  const name = prompt('Nom du nouveau jardin (ex. "Sète", "Nice") :');
-  if(name && name.trim()) createGarden(name.trim());
+  askText('Nom du nouveau jardin (ex. "Sète", "Nice")', '', (name)=> createGarden(name));
 };
 document.getElementById('renameGardenBtn').onclick = ()=>{
   const g = STATE.gardens.find(x=>x.id===STATE.currentGardenId);
-  const name = prompt('Renommer ce jardin :', g ? g.name : '');
-  if(name && name.trim()) renameGarden(STATE.currentGardenId, name.trim());
+  askText('Renommer ce jardin', g ? g.name : '', (name)=> renameGarden(STATE.currentGardenId, name));
 };
 document.getElementById('deleteGardenBtn').onclick = ()=>{
   const g = STATE.gardens.find(x=>x.id===STATE.currentGardenId);
@@ -2316,8 +2426,9 @@ function renderGrid(){
 
       card.innerHTML = `
         ${p.photo ? `<img class="card-photo" src="${p.photo}" alt="">` : ''}
-        <button class="del-btn" title="Supprimer" data-id="${p.id}">✕</button>
-        <button class="edit-btn" title="Modifier" data-id="${p.id}">✏️</button>
+        <button class="del-btn" title="Supprimer" aria-label="Supprimer ${escapeHtml(plantDisplayName(p))}" data-id="${p.id}">✕</button>
+        <button class="dup-btn" title="Dupliquer" aria-label="Dupliquer ${escapeHtml(plantDisplayName(p))}" data-id="${p.id}">⧉</button>
+        <button class="edit-btn" title="Modifier" aria-label="Modifier ${escapeHtml(plantDisplayName(p))}" data-id="${p.id}">✏️</button>
         <div class="status-chip sans">${chipText}</div>
         <h3>${db.emoji} ${escapeHtml(plantDisplayName(p))}</h3>
         <div class="variety">${p.variety ? escapeHtml(p.variety) : 'Sans variété précisée'}</div>
@@ -2326,11 +2437,11 @@ function renderGrid(){
       `;
       card.querySelector('.del-btn').onclick = (e)=>{
         e.stopPropagation();
-        if(confirm('Retirer '+plantDisplayName(p)+' du jardin ?')){
-          plants = plants.filter(x=>x.id!==p.id);
-          persist();
-          renderAll();
-        }
+        deletePlantWithUndo(p.id);
+      };
+      card.querySelector('.dup-btn').onclick = (e)=>{
+        e.stopPropagation();
+        duplicatePlant(p.id);
       };
       card.querySelector('.edit-btn').onclick = (e)=>{
         e.stopPropagation();
@@ -2351,6 +2462,79 @@ function buildLearnMoreUrl(fruitType){
   const siteFilter = sites.map(s=>'site:'+s).join(' OR ');
   const query = `${fruitType} entretien taille récolte (${siteFilter})`;
   return 'https://www.google.com/search?q=' + encodeURIComponent(query);
+}
+
+/* ---------------- Dupliquer une fiche ---------------- */
+function duplicatePlant(id){
+  const p = getPlantById(id);
+  if(!p) return;
+  const copy = JSON.parse(JSON.stringify(p));
+  copy.id = makeId('p');
+  copy.customName = p.customName ? p.customName + ' (copie)' : '';
+  copy.harvestLog = [];
+  copy.tasks = [];
+  copy.photos = [];
+  plants.push(copy);
+  const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+  if(db.prune) autoCreatePruneTask(copy);
+  persist();
+  renderAll();
+  showSnackbar(`${plantDisplayName(copy)} créé(e) à partir de ${plantDisplayName(p)}.`);
+}
+
+/* ---------------- Supprimer avec annulation (5 s) ---------------- */
+let pendingDelete = null; // { plant, timeoutId }
+function commitPendingDelete(){
+  if(pendingDelete){
+    clearTimeout(pendingDelete.timeoutId);
+    pendingDelete = null;
+  }
+}
+function deletePlantWithUndo(id){
+  const idx = plants.findIndex(x=>x.id===id);
+  if(idx===-1) return;
+  commitPendingDelete(); // au cas où une suppression précédente était encore en attente
+  const [removed] = plants.splice(idx, 1);
+  persist();
+  renderAll();
+  const timeoutId = setTimeout(()=>{ pendingDelete = null; }, 5000);
+  pendingDelete = { plant: removed, timeoutId };
+  showSnackbar(`${plantDisplayName(removed)} supprimé(e).`, {
+    actionLabel: 'Annuler',
+    onAction: ()=>{
+      if(pendingDelete && pendingDelete.plant.id===removed.id){
+        plants.push(pendingDelete.plant);
+        clearTimeout(pendingDelete.timeoutId);
+        pendingDelete = null;
+        persist();
+        renderAll();
+      }
+    }
+  });
+}
+
+/* ---------------- Snackbar générique ---------------- */
+let snackbarTimeoutId = null;
+function showSnackbar(message, opts){
+  opts = opts || {};
+  let bar = document.getElementById('snackbar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'snackbar';
+    bar.className = 'snackbar';
+    document.body.appendChild(bar);
+  }
+  clearTimeout(snackbarTimeoutId);
+  bar.innerHTML = `<span>${escapeHtml(message)}</span>` +
+    (opts.actionLabel ? `<button class="snackbar-action">${escapeHtml(opts.actionLabel)}</button>` : '');
+  if(opts.actionLabel){
+    bar.querySelector('.snackbar-action').onclick = ()=>{
+      if(opts.onAction) opts.onAction();
+      bar.classList.remove('show');
+    };
+  }
+  requestAnimationFrame(()=> bar.classList.add('show'));
+  snackbarTimeoutId = setTimeout(()=> bar.classList.remove('show'), 5000);
 }
 
 function plantDisplayName(p){
@@ -2399,28 +2583,39 @@ function autoCreateWateringTasks(){
   }
 }
 
+const REPEAT_LABELS = { weekly: 'toutes les semaines', monthly: 'tous les mois' };
+
 function buildTasksHTML(p){
   const tasks = (p.tasks || []).slice().sort((a,b)=> (a.done - b.done) || a.dueDate.localeCompare(b.dueDate));
   if(tasks.length===0) return '<div class="empty-hint sans">Aucune tâche pour l\'instant.</div>';
   return tasks.map(t=>{
     const overdue = !t.done && t.dueDate && new Date(t.dueDate) < new Date(new Date().toDateString());
+    const repeatTag = t.repeat ? ` <span class="task-repeat-tag" title="Se répète ${REPEAT_LABELS[t.repeat]}">🔁</span>` : '';
     return `<div class="task-row ${t.done?'task-done':''} ${overdue?'task-overdue':''}">
       <input type="checkbox" class="task-check" data-task-id="${t.id}" ${t.done?'checked':''}>
-      <span class="task-label">${escapeHtml(t.label)}</span>
+      <span class="task-label">${escapeHtml(t.label)}${repeatTag}</span>
       <span class="task-date sans">${t.dueDate ? fmtDate(new Date(t.dueDate)) : ''}</span>
-      <button class="task-del-btn" data-task-id="${t.id}" title="Supprimer">✕</button>
+      <button class="task-del-btn" data-task-id="${t.id}" title="Supprimer" aria-label="Supprimer la tâche ${escapeHtml(t.label)}">✕</button>
     </div>`;
   }).join('');
+}
+
+function nextRepeatDate(dueDate, repeat){
+  const d = dueDate ? new Date(dueDate) : today();
+  if(repeat === 'weekly') d.setDate(d.getDate() + 7);
+  else if(repeat === 'monthly') d.setMonth(d.getMonth() + 1);
+  return d.toISOString().slice(0,10);
 }
 
 function addTask(plantId){
   const label = document.getElementById('newTaskLabel').value.trim();
   const date = document.getElementById('newTaskDate').value;
+  const repeat = document.getElementById('newTaskRepeat').value || null;
   if(!label){ alert('Donne un nom à la tâche.'); return; }
   const p = getPlantById(plantId);
   if(!p) return;
   if(!p.tasks) p.tasks = [];
-  p.tasks.push({ id: makeId('t'), label, dueDate: date || '', done: false });
+  p.tasks.push({ id: makeId('t'), label, dueDate: date || '', done: false, repeat });
   persist();
   openDetail(plantId);
   renderToday();
@@ -2430,7 +2625,14 @@ function toggleTask(plantId, taskId){
   const p = getPlantById(plantId);
   if(!p) return;
   const t = (p.tasks||[]).find(x=>x.id===taskId);
-  if(t){ t.done = !t.done; persist(); openDetail(plantId); renderTasksPanel(); }
+  if(!t) return;
+  t.done = !t.done;
+  if(t.done && t.repeat){
+    p.tasks.push({ id: makeId('t'), label: t.label, dueDate: nextRepeatDate(t.dueDate, t.repeat), done: false, repeat: t.repeat });
+  }
+  persist();
+  openDetail(plantId);
+  renderTasksPanel();
 }
 function deleteTask(plantId, taskId){
   const p = getPlantById(plantId);
@@ -2452,7 +2654,7 @@ function buildHarvestLogHTML(p){
     html = log.map(e=>`<div class="harvest-row">
         <span class="sans">${fmtDate(new Date(e.date))}</span>
         <span>${e.qty ? e.qty+' kg' : '—'}</span>
-        <button class="harvest-del-btn" data-entry-id="${e.id}" title="Supprimer">✕</button>
+        <button class="harvest-del-btn" data-entry-id="${e.id}" title="Supprimer" aria-label="Supprimer cette entrée de récolte">✕</button>
       </div>`).join('') +
       `<div class="harvest-total sans">Total enregistré : ${total.toFixed(1)} kg (${log.length} récolte${log.length>1?'s':''})</div>`;
   }
@@ -2460,8 +2662,12 @@ function buildHarvestLogHTML(p){
 }
 function addHarvestEntry(plantId){
   const date = document.getElementById('newHarvestDate').value;
-  const qty = document.getElementById('newHarvestQty').value;
+  let qty = document.getElementById('newHarvestQty').value;
   if(!date){ alert('Choisis une date de récolte.'); return; }
+  if(qty !== '' && (isNaN(parseFloat(qty)) || parseFloat(qty) < 0)){
+    alert('La quantité doit être un nombre positif.');
+    return;
+  }
   const p = getPlantById(plantId);
   if(!p) return;
   if(!p.harvestLog) p.harvestLog = [];
@@ -2475,11 +2681,27 @@ function addHarvestEntry(plantId){
 function deleteHarvestEntry(plantId, entryId){
   const p = getPlantById(plantId);
   if(!p) return;
-  p.harvestLog = (p.harvestLog||[]).filter(x=>x.id!==entryId);
+  const idx = (p.harvestLog||[]).findIndex(x=>x.id===entryId);
+  if(idx===-1) return;
+  const [removed] = p.harvestLog.splice(idx, 1);
   persist();
   openDetail(plantId);
   renderHarvestChart();
   renderStats();
+  showSnackbar('Entrée de récolte supprimée.', {
+    actionLabel: 'Annuler',
+    onAction: ()=>{
+      const p2 = getPlantById(plantId);
+      if(p2){
+        if(!p2.harvestLog) p2.harvestLog = [];
+        p2.harvestLog.push(removed);
+        persist();
+        if(!document.getElementById('detailOverlay').classList.contains('hidden')) openDetail(plantId);
+        renderHarvestChart();
+        renderStats();
+      }
+    }
+  });
 }
 
 /* ---------------- Galerie photo (évolution dans le temps) ---------------- */
@@ -2592,7 +2814,34 @@ document.getElementById('removePhotoBtn').onclick = ()=>{
   showPhotoPreview(null);
 };
 
-document.getElementById('openAddBtn').onclick = ()=>{
+/* ---------------- Fenêtre de saisie générique (remplace prompt()) ---------------- */
+function askText(title, defaultValue, onConfirm){
+  const overlay = document.getElementById('textPromptOverlay');
+  const input = document.getElementById('textPromptInput');
+  document.getElementById('textPromptTitle').textContent = title;
+  input.value = defaultValue || '';
+  overlay.classList.remove('hidden');
+  setTimeout(()=> input.focus(), 50);
+
+  function close(){
+    overlay.classList.add('hidden');
+    okBtn.onclick = null;
+    input.onkeydown = null;
+  }
+  const okBtn = document.getElementById('textPromptOkBtn');
+  okBtn.onclick = ()=>{
+    const val = input.value.trim();
+    close();
+    if(val) onConfirm(val);
+  };
+  input.onkeydown = (e)=>{ if(e.key==='Enter') okBtn.click(); };
+}
+document.getElementById('textPromptCancelBtn').onclick = ()=> document.getElementById('textPromptOverlay').classList.add('hidden');
+document.getElementById('textPromptOverlay').onclick = (e)=>{
+  if(e.target.id==='textPromptOverlay') document.getElementById('textPromptOverlay').classList.add('hidden');
+};
+
+function openAddModal(){
   editingId = null;
   document.getElementById('addModalTitle').textContent = 'Nouvelle fiche';
   document.getElementById('saveAddBtn').textContent = 'Créer la fiche';
@@ -2608,7 +2857,9 @@ document.getElementById('openAddBtn').onclick = ()=>{
   typeSelect.selectedIndex = 0;
   updateTypeHint();
   addOverlay.classList.remove('hidden');
-};
+}
+document.getElementById('openAddBtn').onclick = openAddModal;
+document.getElementById('floatingAddBtn').onclick = openAddModal;
 
 function openEdit(id){
   const p = plants.find(x=>x.id===id);
@@ -2849,27 +3100,27 @@ document.getElementById('freezeBtn').onclick = freezeMapBackground;
 document.getElementById('unfreezeBtn').onclick = unfreezeMapBackground;
 
 /* ---------------- Vues de carte enregistrées dans l'appli ---------------- */
-async function saveCurrentView(){
+function saveCurrentView(){
   if(!leafletMap || typeof html2canvas === 'undefined') return;
-  const name = prompt('Nom de cette vue (ex. "Vue d\'ensemble", "Coin des agrumes") :');
-  if(!name || !name.trim()) return;
-  const btn = document.getElementById('saveViewBtn');
-  const original = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Capture en cours...';
-  try{
-    const canvas = await html2canvas(document.getElementById('leafletMap'), { useCORS: true, allowTaint: false, logging: false });
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-    const g = currentGrid();
-    g.savedViews.push({ id: makeId('v'), name: name.trim(), image: dataUrl, date: new Date().toISOString() });
-    persist();
-    renderSavedViews();
-  }catch(e){
-    alert("La capture a échoué (restriction de sécurité du navigateur sur certains calques). Essaie avec uniquement Satellite/Topographique/Rues/Plan actifs.");
-    console.error('saveCurrentView failed', e);
-  }
-  btn.disabled = false;
-  btn.textContent = original;
+  askText('Nom de cette vue (ex. "Vue d\'ensemble", "Coin des agrumes")', '', async (name)=>{
+    const btn = document.getElementById('saveViewBtn');
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Capture en cours...';
+    try{
+      const canvas = await html2canvas(document.getElementById('leafletMap'), { useCORS: true, allowTaint: false, logging: false });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      const g = currentGrid();
+      g.savedViews.push({ id: makeId('v'), name, image: dataUrl, date: new Date().toISOString() });
+      persist();
+      renderSavedViews();
+    }catch(e){
+      alert("La capture a échoué (restriction de sécurité du navigateur sur certains calques). Essaie avec uniquement Satellite/Topographique/Rues/Plan actifs.");
+      console.error('saveCurrentView failed', e);
+    }
+    btn.disabled = false;
+    btn.textContent = original;
+  });
 }
 document.getElementById('saveViewBtn').onclick = saveCurrentView;
 
@@ -3009,7 +3260,53 @@ function openAssignAtLatLng(lat, lng){
 document.getElementById('cancelAssignBtn').onclick = ()=> document.getElementById('assignOverlay').classList.add('hidden');
 
 document.getElementById('helpBtn').onclick = ()=> document.getElementById('helpOverlay').classList.remove('hidden');
+
+/* Repli des actions secondaires (export/import/partage/notifs/mode sombre) pour alléger l'en-tête */
+function applyMoreActionsState(){
+  const open = localStorage.getItem('verger-more-actions-open') === '1';
+  document.getElementById('moreActionsRow').style.display = open ? 'block' : 'none';
+  document.getElementById('moreActionsToggle').textContent = open ? '⋯ Moins d\'actions' : '⋯ Plus d\'actions';
+}
+document.getElementById('moreActionsToggle').onclick = ()=>{
+  const open = localStorage.getItem('verger-more-actions-open') === '1';
+  localStorage.setItem('verger-more-actions-open', open ? '0' : '1');
+  applyMoreActionsState();
+};
+applyMoreActionsState();
 document.getElementById('closeHelpBtn').onclick = ()=> document.getElementById('helpOverlay').classList.add('hidden');
+
+/* ---------------- Nouveautés / historique des versions ---------------- */
+const CHANGELOG = [
+  { v:'v2.4.0', items:['Bouton flottant "+" toujours accessible, plus besoin de scroller en bas','Actions secondaires (export/import/partage/notifs) repliées par défaut pour un en-tête plus léger','Les fenêtres "Nouveau jardin" et "Renommer" remplacent les popups natives du téléphone, plus fiable'] },
+  { v:'v2.3.0', items:['Export Excel/CSV','Déplacer une fiche vers un autre jardin','Tâches récurrentes (toutes les semaines / tous les mois)','Page "Nouveautés" (celle-ci !), accessible en tapant sur le numéro de version'] },
+  { v:'v2.2.0', items:['Dupliquer une fiche en un clic','Suppression avec 5 s pour annuler (fiches et récoltes)','Validation : impossible d\'entrer un nombre de kg négatif','Accessibilité : labels pour lecteurs d\'écran, touche Échap ferme les fenêtres'] },
+  { v:'v2.1.0', items:['Lien "en savoir plus" par fiche vers de vrais articles de jardinage (Rustica, Gerbeaud...)'] },
+  { v:'v2.0.0', items:['Vue calendrier annuelle : récolte et taille de tous les fruits, mois par mois'] },
+  { v:'v1.9.0', items:['Guide "Comment ça marche" intégré, affiché automatiquement à la 1ère visite'] },
+  { v:'v1.8.0', items:['Raccourcis rapides (appui long sur l\'icône)','Statistiques globales (total récolté, fruit le plus productif...)'] },
+  { v:'v1.7.0', items:['Galerie photo datée par fruit','Tâche "Arroser" créée automatiquement si pas de pluie prévue','PDF combiné plan + étiquettes'] },
+  { v:'v1.6.0', items:['Mode sombre','Météo locale avec alertes gel/pluie','Graphique des récoltes par année','Associations de plantes (bons voisins / à éviter)','Étiquettes à imprimer'] },
+  { v:'v1.5.0', items:['Recherche dans les fiches','Journal des récoltes','Tâches d\'entretien avec échéances','Rappel d\'export automatique','Notifications','Partage en lecture seule'] },
+  { v:'v1.4.0 – v1.4.3', items:['Carte satellite en direct avec recherche d\'adresse (remplace le plan en grille)','Mélange de plusieurs fonds de carte avec opacité','Figer le fond de carte en image fixe','Zoom libre et fluide'] },
+  { v:'v1.3.0', items:['8 fonds de carte différents (satellite, topo, relief, plan...)'] },
+  { v:'v1.2.0', items:['Photos par fruit, plusieurs jardins, export/import, plan de parcelle en grille (1ère version)'] },
+  { v:'v1.1.0 et avant', items:['51 fruits puis 66 avec les aromatiques, fiches techniques complètes, noms personnalisés, sous-dossiers par type, PDF multi-pages'] }
+];
+function renderChangelog(){
+  document.getElementById('changelogContent').innerHTML = CHANGELOG.map(entry=>`
+    <div class="help-section">
+      <h3>${entry.v}</h3>
+      <p>${entry.items.map(i=>'• '+escapeHtml(i)).join('<br>')}</p>
+    </div>`).join('');
+}
+document.getElementById('appVersion').onclick = ()=>{
+  renderChangelog();
+  document.getElementById('changelogOverlay').classList.remove('hidden');
+};
+document.getElementById('closeChangelogBtn').onclick = ()=> document.getElementById('changelogOverlay').classList.add('hidden');
+document.getElementById('changelogOverlay').onclick = (e)=>{
+  if(e.target.id==='changelogOverlay') document.getElementById('changelogOverlay').classList.add('hidden');
+};
 document.getElementById('helpOverlay').onclick = (e)=>{
   if(e.target.id==='helpOverlay') document.getElementById('helpOverlay').classList.add('hidden');
 };
@@ -3116,6 +3413,11 @@ function openDetail(id){
       <div class="detail-add-row">
         <input type="text" id="newTaskLabel" placeholder="Nouvelle tâche (ex. Arroser)">
         <input type="date" id="newTaskDate">
+        <select id="newTaskRepeat">
+          <option value="">Pas de répétition</option>
+          <option value="weekly">Toutes les semaines</option>
+          <option value="monthly">Tous les mois</option>
+        </select>
         <button class="btn btn-secondary sans" id="addTaskBtn">+ Ajouter</button>
       </div>
     </div>
@@ -3136,6 +3438,7 @@ function openDetail(id){
     </div>
   `;
   detailOverlay.classList.remove('hidden');
+  document.getElementById('moveFromDetailBtn').style.display = STATE.gardens.length > 1 ? 'inline-block' : 'none';
 
   document.getElementById('addTaskBtn').onclick = ()=> addTask(p.id);
   document.getElementById('addHarvestBtn').onclick = ()=> addHarvestEntry(p.id);
@@ -3168,6 +3471,42 @@ document.getElementById('printOneBtn').onclick = ()=>{
   const p = plants.find(x=>x.id===currentDetailId);
   if(p) handlePdf([p]);
 };
+
+/* ---------------- Déplacer une fiche vers un autre jardin ---------------- */
+document.getElementById('moveFromDetailBtn').onclick = ()=>{
+  if(!currentDetailId) return;
+  const list = document.getElementById('moveGardenList');
+  list.innerHTML = '';
+  const others = STATE.gardens.filter(g=>g.id!==STATE.currentGardenId);
+  others.forEach(g=>{
+    const item = document.createElement('div');
+    item.className = 'assign-item';
+    item.textContent = g.name;
+    item.onclick = ()=> movePlantToGarden(currentDetailId, g.id);
+    list.appendChild(item);
+  });
+  document.getElementById('moveOverlay').classList.remove('hidden');
+};
+document.getElementById('cancelMoveBtn').onclick = ()=> document.getElementById('moveOverlay').classList.add('hidden');
+document.getElementById('moveOverlay').onclick = (e)=>{
+  if(e.target.id==='moveOverlay') document.getElementById('moveOverlay').classList.add('hidden');
+};
+
+function movePlantToGarden(plantId, targetGardenId){
+  const idx = plants.findIndex(x=>x.id===plantId);
+  if(idx===-1) return;
+  const [moved] = plants.splice(idx, 1);
+  STATE.data[targetGardenId].plants.push(moved);
+  // retire aussi tout marqueur de carte associé dans le jardin d'origine (coordonnées non transposables)
+  const grid = currentGrid();
+  if(grid.markers) grid.markers = grid.markers.filter(m=>m.plantId!==plantId);
+  persist();
+  document.getElementById('moveOverlay').classList.add('hidden');
+  document.getElementById('detailOverlay').classList.add('hidden');
+  renderAll();
+  const targetName = STATE.gardens.find(g=>g.id===targetGardenId).name;
+  showSnackbar(`${plantDisplayName(moved)} déplacé(e) vers "${targetName}".`);
+}
 
 /* ---------------- Capacité de téléchargement (fournie par l'hôte) ---------------- */
 let downloadsCap = null;
@@ -3480,7 +3819,7 @@ document.getElementById('combinedPdfBtn').onclick = generateCombinedPdf;
 
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v2.1.0';
+const APP_VERSION = 'v2.4.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
@@ -3492,6 +3831,15 @@ if('serviceWorker' in navigator){
 document.getElementById('fichesSearchInput').addEventListener('input', (e)=>{
   fichesSearchTerm = e.target.value.trim().toLowerCase();
   renderGrid();
+});
+
+/* Échap ferme la fenêtre ouverte la plus récente */
+document.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Escape') return;
+  const openOverlays = [...document.querySelectorAll('.modal-overlay')].filter(el => !el.classList.contains('hidden'));
+  if(openOverlays.length){
+    openOverlays[openOverlays.length-1].classList.add('hidden');
+  }
 });
 
 renderAll();
