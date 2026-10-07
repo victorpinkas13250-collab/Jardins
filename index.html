@@ -67,6 +67,18 @@ header.top{
   background:linear-gradient(180deg, var(--sage-2), var(--sage));
 }
 header.top .inner{max-width:1100px;margin:0 auto;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.quick-nav{
+  position:sticky;top:0;z-index:400;
+  display:flex;gap:4px;overflow-x:auto;
+  background:var(--olive-dark);padding:8px 12px;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+.quick-nav button{
+  flex:0 0 auto;background:none;border:none;color:var(--sage);
+  font-family:inherit;font-size:.8rem;padding:7px 12px;border-radius:14px;
+  cursor:pointer;white-space:nowrap;
+}
+.quick-nav button:hover, .quick-nav button.active{background:rgba(255,255,255,.18);}
 h1{
   font-size:2.1rem;
   margin:0;
@@ -248,9 +260,10 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
   line-height:1.4;
 }
 .plant-card .del-btn{
-  position:absolute;top:10px;right:10px;
+  position:absolute;top:6px;right:6px;
   background:none;border:none;color:var(--bark-soft);
-  font-size:1.1rem;cursor:pointer;line-height:1;padding:2px 6px;
+  font-size:1.1rem;cursor:pointer;line-height:1;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
 }
 .plant-card .del-btn:hover{color:var(--danger);}
 
@@ -422,15 +435,17 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 .help-section p{margin:0;font-size:.85rem;line-height:1.5;color:var(--bark);}
 
 .edit-btn{
-  position:absolute;top:10px;right:58px;
+  position:absolute;top:6px;right:78px;
   background:none;border:none;color:var(--bark-soft);
-  font-size:.95rem;cursor:pointer;line-height:1;padding:2px 6px;
+  font-size:.95rem;cursor:pointer;line-height:1;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
 }
 .edit-btn:hover{color:var(--fig);}
 .dup-btn{
-  position:absolute;top:10px;right:34px;
+  position:absolute;top:6px;right:42px;
   background:none;border:none;color:var(--bark-soft);
-  font-size:.95rem;cursor:pointer;line-height:1;padding:2px 6px;
+  font-size:.95rem;cursor:pointer;line-height:1;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
 }
 .dup-btn:hover{color:var(--olive-dark);}
 .snackbar{
@@ -595,6 +610,13 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
   </div>
 </header>
 
+<nav id="quickNav" class="quick-nav sans">
+  <button data-target="todaySection">🏠 Accueil</button>
+  <button data-target="mapSection">🗺️ Carte</button>
+  <button data-target="fichesSection">🍑 Fiches</button>
+  <button data-target="statsSection">📊 Stats</button>
+</nav>
+
 <div class="wrap">
 
   <div id="exportReminderBanner" class="export-reminder sans" style="display:none;">
@@ -610,7 +632,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     </div>
   </div>
 
-  <div class="today-panel">
+  <div class="today-panel" id="todaySection">
     <h2 class="sans">À surveiller cette semaine</h2>
     <div class="today-list" id="todayList"></div>
   </div>
@@ -620,7 +642,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     <div class="today-list" id="tasksPanelList"></div>
   </div>
 
-  <div class="section-title">Plan de la parcelle</div>
+  <div class="section-title" id="mapSection">Plan de la parcelle</div>
   <div class="parcel-panel">
     <div class="map-search-row sans">
       <input type="text" id="mapSearchInput" placeholder="Chercher une adresse, une ville, un lieu-dit..." onkeydown="if(event.key==='Enter'){mapSearchPlace();}">
@@ -628,7 +650,8 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     </div>
     <div id="mapSearchResults" class="map-search-results"></div>
 
-    <div id="layerMixPanel" class="layer-mix-panel sans">
+    <button id="layerMixToggle" class="garden-btn sans" style="margin-bottom:8px;">🎨 Choisir le fond de carte</button>
+    <div id="layerMixPanel" class="layer-mix-panel sans" style="display:none;">
       <div class="layer-mix-row" data-layer="satellite">
         <label><input type="checkbox" class="layer-check" checked> 🛰️ Satellite <span class="sharp-tag">net</span></label>
         <input type="range" class="layer-opacity" min="0" max="100" value="100">
@@ -702,7 +725,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     </div>
   </div>
 
-  <div class="section-title">📊 Graphique des récoltes</div>
+  <div class="section-title" id="statsSection">📊 Graphique des récoltes</div>
   <div class="chart-panel">
     <div class="chart-controls sans">
       <select id="chartFilterSelect"></select>
@@ -714,7 +737,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
   <div class="section-title">📈 Statistiques</div>
   <div id="statsPanel" class="stats-grid"></div>
 
-  <div class="section-title">Mes fiches du jardin <span class="count sans" id="plantCount"></span></div>
+  <div class="section-title" id="fichesSection">Mes fiches du jardin <span class="count sans" id="plantCount"></span></div>
   <input type="text" id="fichesSearchInput" class="fiches-search sans" placeholder="🔍 Rechercher un fruit, une variété, un emplacement...">
   <div id="gardenGrid" class="plant-grid"></div>
   <div id="emptyState" class="empty-garden" style="display:none;">
@@ -3042,10 +3065,12 @@ document.querySelectorAll('.layer-mix-row').forEach(row=>{
 });
 
 /* ---------------- Geler / dégeler le fond de carte ---------------- */
+let layerMixOpen = false;
 function applyFrozenState(){
   if(!leafletMap) return;
   const g = currentGrid();
   const panel = document.getElementById('layerMixPanel');
+  const toggleBtn = document.getElementById('layerMixToggle');
   const freezeBtn = document.getElementById('freezeBtn');
   const unfreezeBtn = document.getElementById('unfreezeBtn');
 
@@ -3055,10 +3080,12 @@ function applyFrozenState(){
     Object.values(mapLayers).forEach(l=>{ if(leafletMap.hasLayer(l)) leafletMap.removeLayer(l); });
     frozenOverlay = L.imageOverlay(g.frozenImage, g.frozenBounds).addTo(leafletMap);
     panel.style.display = 'none';
+    toggleBtn.style.display = 'none';
     freezeBtn.style.display = 'none';
     unfreezeBtn.style.display = 'inline-block';
   } else {
-    panel.style.display = 'flex';
+    toggleBtn.style.display = 'inline-block';
+    panel.style.display = layerMixOpen ? 'flex' : 'none';
     freezeBtn.style.display = 'inline-block';
     unfreezeBtn.style.display = 'none';
     applyLayerMixFromState();
@@ -3097,6 +3124,11 @@ function unfreezeMapBackground(){
 }
 
 document.getElementById('freezeBtn').onclick = freezeMapBackground;
+document.getElementById('layerMixToggle').onclick = ()=>{
+  layerMixOpen = !layerMixOpen;
+  document.getElementById('layerMixPanel').style.display = layerMixOpen ? 'flex' : 'none';
+  document.getElementById('layerMixToggle').textContent = layerMixOpen ? '🎨 Masquer les fonds de carte' : '🎨 Choisir le fond de carte';
+};
 document.getElementById('unfreezeBtn').onclick = unfreezeMapBackground;
 
 /* ---------------- Vues de carte enregistrées dans l'appli ---------------- */
@@ -3277,6 +3309,7 @@ document.getElementById('closeHelpBtn').onclick = ()=> document.getElementById('
 
 /* ---------------- Nouveautés / historique des versions ---------------- */
 const CHANGELOG = [
+  { v:'v2.5.0', items:['Barre de navigation rapide collante (Accueil / Carte / Fiches / Stats) pour ne plus avoir à tout faire défiler','Panneau des fonds de carte replié par défaut, pour une section carte plus compacte','Boutons des cartes (supprimer/dupliquer/modifier) agrandis pour éviter les mauvais clics'] },
   { v:'v2.4.0', items:['Bouton flottant "+" toujours accessible, plus besoin de scroller en bas','Actions secondaires (export/import/partage/notifs) repliées par défaut pour un en-tête plus léger','Les fenêtres "Nouveau jardin" et "Renommer" remplacent les popups natives du téléphone, plus fiable'] },
   { v:'v2.3.0', items:['Export Excel/CSV','Déplacer une fiche vers un autre jardin','Tâches récurrentes (toutes les semaines / tous les mois)','Page "Nouveautés" (celle-ci !), accessible en tapant sur le numéro de version'] },
   { v:'v2.2.0', items:['Dupliquer une fiche en un clic','Suppression avec 5 s pour annuler (fiches et récoltes)','Validation : impossible d\'entrer un nombre de kg négatif','Accessibilité : labels pour lecteurs d\'écran, touche Échap ferme les fenêtres'] },
@@ -3819,7 +3852,7 @@ document.getElementById('combinedPdfBtn').onclick = generateCombinedPdf;
 
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v2.4.0';
+const APP_VERSION = 'v2.5.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
@@ -3832,6 +3865,28 @@ document.getElementById('fichesSearchInput').addEventListener('input', (e)=>{
   fichesSearchTerm = e.target.value.trim().toLowerCase();
   renderGrid();
 });
+
+/* ---------------- Navigation rapide collante ---------------- */
+const quickNavTargets = ['todaySection','mapSection','fichesSection','statsSection'];
+document.querySelectorAll('#quickNav button').forEach(btn=>{
+  btn.onclick = ()=>{
+    const el = document.getElementById(btn.dataset.target);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+});
+function updateQuickNavActive(){
+  const navHeight = document.getElementById('quickNav').offsetHeight;
+  let current = quickNavTargets[0];
+  for(const id of quickNavTargets){
+    const el = document.getElementById(id);
+    if(el && el.getBoundingClientRect().top - navHeight <= 80) current = id;
+  }
+  document.querySelectorAll('#quickNav button').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.target === current);
+  });
+}
+window.addEventListener('scroll', updateQuickNavActive, { passive:true });
+updateQuickNavActive();
 
 /* Échap ferme la fenêtre ouverte la plus récente */
 document.addEventListener('keydown', (e)=>{
