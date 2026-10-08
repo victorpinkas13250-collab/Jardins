@@ -67,18 +67,26 @@ header.top{
   background:linear-gradient(180deg, var(--sage-2), var(--sage));
 }
 header.top .inner{max-width:1100px;margin:0 auto;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;}
-.quick-nav{
-  position:sticky;top:0;z-index:400;
-  display:flex;gap:4px;overflow-x:auto;
-  background:var(--olive-dark);padding:8px 12px;
-  box-shadow:0 2px 8px rgba(0,0,0,.15);
+/* ---------- écrans par onglet ---------- */
+.app-view{display:none;}
+.app-view.active{display:block;}
+
+/* ---------- barre d'onglets fixée en bas (navigation façon appli native) ---------- */
+.bottom-tab-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:600;
+  display:flex;
+  background:var(--cream);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+  box-shadow:0 -2px 10px rgba(0,0,0,.08);
 }
-.quick-nav button{
-  flex:0 0 auto;background:none;border:none;color:var(--sage);
-  font-family:inherit;font-size:.8rem;padding:7px 12px;border-radius:14px;
-  cursor:pointer;white-space:nowrap;
+.tab-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:none;border:none;color:var(--bark-soft);
+  font-family:inherit;font-size:.68rem;padding:9px 4px 7px;cursor:pointer;
 }
-.quick-nav button:hover, .quick-nav button.active{background:rgba(255,255,255,.18);}
+.tab-icon{font-size:1.25rem;line-height:1;}
+.tab-btn.active{color:var(--olive-dark);font-weight:700;}
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px));} /* laisse la place pour la barre d'onglets fixe */
 h1{
   font-size:2.1rem;
   margin:0;
@@ -457,7 +465,7 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 }
 .snackbar.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
 .floating-add-btn{
-  position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+  position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom, 0px));
   width:56px;height:56px;border-radius:50%;
   background:var(--olive);color:var(--sage);border:none;
   font-size:1.8rem;line-height:1;cursor:pointer;
@@ -610,151 +618,167 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
   </div>
 </header>
 
-<nav id="quickNav" class="quick-nav sans">
-  <button data-target="todaySection">🏠 Accueil</button>
-  <button data-target="mapSection">🗺️ Carte</button>
-  <button data-target="fichesSection">🍑 Fiches</button>
-  <button data-target="statsSection">📊 Stats</button>
-</nav>
-
 <div class="wrap">
 
-  <div id="exportReminderBanner" class="export-reminder sans" style="display:none;">
-    <span id="exportReminderText"></span>
-    <button class="btn btn-primary sans" id="exportReminderBtn">Exporter maintenant</button>
-    <button class="export-reminder-dismiss" id="exportReminderDismiss" title="Fermer" aria-label="Fermer ce rappel">✕</button>
-  </div>
-
-  <div class="today-panel weather-panel">
-    <h2 class="sans">🌦️ Météo — <span id="weatherLocLabel">emplacement de la carte</span></h2>
-    <div class="today-list" id="weatherBox">
-      <div class="today-empty sans">Chargement de la météo...</div>
-    </div>
-  </div>
-
-  <div class="today-panel" id="todaySection">
-    <h2 class="sans">À surveiller cette semaine</h2>
-    <div class="today-list" id="todayList"></div>
-  </div>
-
-  <div class="today-panel tasks-panel">
-    <h2 class="sans">✅ Tâches d'entretien</h2>
-    <div class="today-list" id="tasksPanelList"></div>
-  </div>
-
-  <div class="section-title" id="mapSection">Plan de la parcelle</div>
-  <div class="parcel-panel">
-    <div class="map-search-row sans">
-      <input type="text" id="mapSearchInput" placeholder="Chercher une adresse, une ville, un lieu-dit..." onkeydown="if(event.key==='Enter'){mapSearchPlace();}">
-      <button class="btn btn-primary sans" id="mapSearchBtn">🔍 Chercher</button>
-    </div>
-    <div id="mapSearchResults" class="map-search-results"></div>
-
-    <button id="layerMixToggle" class="garden-btn sans" style="margin-bottom:8px;">🎨 Choisir le fond de carte</button>
-    <div id="layerMixPanel" class="layer-mix-panel sans" style="display:none;">
-      <div class="layer-mix-row" data-layer="satellite">
-        <label><input type="checkbox" class="layer-check" checked> 🛰️ Satellite <span class="sharp-tag">net</span></label>
-        <input type="range" class="layer-opacity" min="0" max="100" value="100">
-      </div>
-      <div class="layer-mix-row" data-layer="topo">
-        <label><input type="checkbox" class="layer-check"> 🗺️ Topographique <span class="sharp-tag">net</span></label>
-        <input type="range" class="layer-opacity" min="0" max="100" value="100">
-      </div>
-      <div class="layer-mix-row" data-layer="esriStreet">
-        <label><input type="checkbox" class="layer-check"> 🛣️ Rues détaillées <span class="sharp-tag">net</span></label>
-        <input type="range" class="layer-opacity" min="0" max="100" value="100">
-      </div>
-      <div class="layer-mix-row" data-layer="street">
-        <label><input type="checkbox" class="layer-check"> 📍 Plan (routes, sans photo) <span class="sharp-tag">net</span></label>
-        <input type="range" class="layer-opacity" min="0" max="100" value="100">
-      </div>
-      <div class="layer-mix-row" data-layer="hillshade">
-        <label><input type="checkbox" class="layer-check"> 🏔️ Relief (sans végétation) <span class="blur-tag">flou de près</span></label>
-        <input type="range" class="layer-opacity" min="0" max="100" value="60">
-      </div>
-      <div class="layer-mix-row" data-layer="natgeo">
-        <label><input type="checkbox" class="layer-check"> 📗 National Geographic <span class="blur-tag">flou de près</span></label>
-        <input type="range" class="layer-opacity" min="0" max="100" value="100">
-      </div>
-      <div class="layer-mix-row" data-layer="opentopo">
-        <label><input type="checkbox" class="layer-check"> ⛰️ Topo (courbes de niveau) <span class="blur-tag">flou de près</span></label>
-        <input type="range" class="layer-opacity" min="0" max="100" value="100">
-      </div>
-      <div class="layer-mix-hint sans">"net" = précision au niveau propriété. "flou de près" = carte mondiale, jamais plus précise que ça, même ailleurs — pas réparable, c'est la donnée elle-même qui s'arrête là.</div>
+  <div class="app-view" id="view-home">
+    <div id="exportReminderBanner" class="export-reminder sans" style="display:none;">
+      <span id="exportReminderText"></span>
+      <button class="btn btn-primary sans" id="exportReminderBtn">Exporter maintenant</button>
+      <button class="export-reminder-dismiss" id="exportReminderDismiss" title="Fermer" aria-label="Fermer ce rappel">✕</button>
     </div>
 
-    <div class="parcel-legend sans">
-      <span><i class="dot dot-now"></i> à récolter</span>
-      <span><i class="dot dot-soon"></i> bientôt</span>
-      <span><i class="dot dot-wait"></i> en attente</span>
-      <span class="map-hint">Tape sur la carte pour placer un fruit</span>
-    </div>
-    <div class="freeze-row sans">
-      <button class="garden-btn sans" id="toggleMarkersBtn">👁️ Masquer les fruits</button>
-      <button class="btn btn-primary sans" id="freezeBtn">🔒 Figer le fond de carte</button>
-      <button class="btn btn-secondary sans" id="unfreezeBtn" style="display:none;">🔓 Dégeler / modifier le mélange</button>
-    </div>
-    <div id="leafletMap" class="leaflet-map-box"></div>
-
-    <div class="saved-views-row sans">
-      <button class="btn btn-secondary sans" id="saveViewBtn">📸 Enregistrer cette vue dans l'appli</button>
-    </div>
-    <div id="savedViewsGallery" class="saved-views-gallery"></div>
-  </div>
-
-  <!-- Vue enregistrée en grand -->
-  <div class="modal-overlay hidden" id="viewFullOverlay">
-    <div class="modal">
-      <h2 id="viewFullTitle"></h2>
-      <img id="viewFullImg" style="width:100%;border-radius:3px;border:1px solid var(--line);">
-      <div class="modal-actions">
-        <button class="btn btn-secondary" id="closeViewFullBtn">Fermer</button>
-        <button class="btn btn-secondary sans" id="deleteViewBtn" style="color:var(--danger);">🗑️ Supprimer cette vue</button>
+    <div class="today-panel weather-panel">
+      <h2 class="sans">🌦️ Météo — <span id="weatherLocLabel">emplacement de la carte</span></h2>
+      <div class="today-list" id="weatherBox">
+        <div class="today-empty sans">Chargement de la météo...</div>
       </div>
     </div>
-  </div>
 
-  <div class="section-title">📅 Vue calendrier annuel</div>
-  <div class="calendar-panel">
-    <div class="calendar-scroll">
-      <div id="calendarGrid" class="calendar-grid"></div>
+    <div class="today-panel" id="todaySection">
+      <h2 class="sans">À surveiller cette semaine</h2>
+      <div class="today-list" id="todayList"></div>
     </div>
-    <div class="calendar-legend sans">
-      <span><i class="dot dot-harvest-cal"></i> récolte</span>
-      <span><i class="dot dot-prune-cal"></i> taille</span>
+
+    <div class="today-panel tasks-panel">
+      <h2 class="sans">✅ Tâches d'entretien</h2>
+      <div class="today-list" id="tasksPanelList"></div>
     </div>
   </div>
 
-  <div class="section-title" id="statsSection">📊 Graphique des récoltes</div>
-  <div class="chart-panel">
-    <div class="chart-controls sans">
-      <select id="chartFilterSelect"></select>
+  <div class="app-view" id="view-map">
+    <div class="section-title" id="mapSection">Plan de la parcelle</div>
+    <div class="parcel-panel">
+      <div class="map-search-row sans">
+        <input type="text" id="mapSearchInput" placeholder="Chercher une adresse, une ville, un lieu-dit..." onkeydown="if(event.key==='Enter'){mapSearchPlace();}">
+        <button class="btn btn-primary sans" id="mapSearchBtn">🔍 Chercher</button>
+      </div>
+      <div id="mapSearchResults" class="map-search-results"></div>
+
+      <button id="layerMixToggle" class="garden-btn sans" style="margin-bottom:8px;">🎨 Choisir le fond de carte</button>
+      <div id="layerMixPanel" class="layer-mix-panel sans" style="display:none;">
+        <div class="layer-mix-row" data-layer="satellite">
+          <label><input type="checkbox" class="layer-check" checked> 🛰️ Satellite <span class="sharp-tag">net</span></label>
+          <input type="range" class="layer-opacity" min="0" max="100" value="100">
+        </div>
+        <div class="layer-mix-row" data-layer="topo">
+          <label><input type="checkbox" class="layer-check"> 🗺️ Topographique <span class="sharp-tag">net</span></label>
+          <input type="range" class="layer-opacity" min="0" max="100" value="100">
+        </div>
+        <div class="layer-mix-row" data-layer="esriStreet">
+          <label><input type="checkbox" class="layer-check"> 🛣️ Rues détaillées <span class="sharp-tag">net</span></label>
+          <input type="range" class="layer-opacity" min="0" max="100" value="100">
+        </div>
+        <div class="layer-mix-row" data-layer="street">
+          <label><input type="checkbox" class="layer-check"> 📍 Plan (routes, sans photo) <span class="sharp-tag">net</span></label>
+          <input type="range" class="layer-opacity" min="0" max="100" value="100">
+        </div>
+        <div class="layer-mix-row" data-layer="hillshade">
+          <label><input type="checkbox" class="layer-check"> 🏔️ Relief (sans végétation) <span class="blur-tag">flou de près</span></label>
+          <input type="range" class="layer-opacity" min="0" max="100" value="60">
+        </div>
+        <div class="layer-mix-row" data-layer="natgeo">
+          <label><input type="checkbox" class="layer-check"> 📗 National Geographic <span class="blur-tag">flou de près</span></label>
+          <input type="range" class="layer-opacity" min="0" max="100" value="100">
+        </div>
+        <div class="layer-mix-row" data-layer="opentopo">
+          <label><input type="checkbox" class="layer-check"> ⛰️ Topo (courbes de niveau) <span class="blur-tag">flou de près</span></label>
+          <input type="range" class="layer-opacity" min="0" max="100" value="100">
+        </div>
+        <div class="layer-mix-hint sans">"net" = précision au niveau propriété. "flou de près" = carte mondiale, jamais plus précise que ça, même ailleurs — pas réparable, c'est la donnée elle-même qui s'arrête là.</div>
+      </div>
+
+      <div class="parcel-legend sans">
+        <span><i class="dot dot-now"></i> à récolter</span>
+        <span><i class="dot dot-soon"></i> bientôt</span>
+        <span><i class="dot dot-wait"></i> en attente</span>
+        <span class="map-hint">Tape sur la carte pour placer un fruit</span>
+      </div>
+      <div class="freeze-row sans">
+        <button class="garden-btn sans" id="toggleMarkersBtn">👁️ Masquer les fruits</button>
+        <button class="btn btn-primary sans" id="freezeBtn">🔒 Figer le fond de carte</button>
+        <button class="btn btn-secondary sans" id="unfreezeBtn" style="display:none;">🔓 Dégeler / modifier le mélange</button>
+      </div>
+      <div id="leafletMap" class="leaflet-map-box"></div>
+
+      <div class="saved-views-row sans">
+        <button class="btn btn-secondary sans" id="saveViewBtn">📸 Enregistrer cette vue dans l'appli</button>
+      </div>
+      <div id="savedViewsGallery" class="saved-views-gallery"></div>
     </div>
-    <canvas id="harvestChart" height="180"></canvas>
-    <div id="chartEmptyState" class="empty-hint sans" style="display:none;padding:20px 0;text-align:center;">Pas encore assez de données de récolte. Ajoute des entrées dans le journal de tes fiches.</div>
   </div>
 
-  <div class="section-title">📈 Statistiques</div>
-  <div id="statsPanel" class="stats-grid"></div>
+  <div class="app-view" id="view-stats">
+    <div class="section-title">📅 Vue calendrier annuel</div>
+    <div class="calendar-panel">
+      <div class="calendar-scroll">
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </div>
+      <div class="calendar-legend sans">
+        <span><i class="dot dot-harvest-cal"></i> récolte</span>
+        <span><i class="dot dot-prune-cal"></i> taille</span>
+      </div>
+    </div>
 
-  <div class="section-title" id="fichesSection">Mes fiches du jardin <span class="count sans" id="plantCount"></span></div>
-  <input type="text" id="fichesSearchInput" class="fiches-search sans" placeholder="🔍 Rechercher un fruit, une variété, un emplacement...">
-  <div id="gardenGrid" class="plant-grid"></div>
-  <div id="emptyState" class="empty-garden" style="display:none;">
-    Le jardin est encore vide. Créez votre première fiche pour commencer à suivre les récoltes.
+    <div class="section-title" id="statsSection">📊 Graphique des récoltes</div>
+    <div class="chart-panel">
+      <div class="chart-controls sans">
+        <select id="chartFilterSelect"></select>
+      </div>
+      <canvas id="harvestChart" height="180"></canvas>
+      <div id="chartEmptyState" class="empty-hint sans" style="display:none;padding:20px 0;text-align:center;">Pas encore assez de données de récolte. Ajoute des entrées dans le journal de tes fiches.</div>
+    </div>
+
+    <div class="section-title">📈 Statistiques</div>
+    <div id="statsPanel" class="stats-grid"></div>
   </div>
 
-  <div class="fab-row">
-    <button class="add-fab" id="openAddBtn">+ Créer une fiche</button>
-    <button class="add-fab secondary-fab sans" id="printAllBtn">📥 Télécharger le carnet PDF</button>
-    <button class="add-fab secondary-fab sans" id="labelsBtn">🏷️ Étiquettes à imprimer</button>
-    <button class="add-fab secondary-fab sans" id="combinedPdfBtn">📋 Plan + étiquettes (PDF)</button>
+  <div class="app-view" id="view-fiches">
+    <div class="section-title" id="fichesSection">Mes fiches du jardin <span class="count sans" id="plantCount"></span></div>
+    <input type="text" id="fichesSearchInput" class="fiches-search sans" placeholder="🔍 Rechercher un fruit, une variété, un emplacement...">
+    <div id="gardenGrid" class="plant-grid"></div>
+    <div id="emptyState" class="empty-garden" style="display:none;">
+      Le jardin est encore vide. Créez votre première fiche pour commencer à suivre les récoltes.
+    </div>
+
+    <div class="fab-row">
+      <button class="add-fab" id="openAddBtn">+ Créer une fiche</button>
+      <button class="add-fab secondary-fab sans" id="printAllBtn">📥 Télécharger le carnet PDF</button>
+      <button class="add-fab secondary-fab sans" id="labelsBtn">🏷️ Étiquettes à imprimer</button>
+      <button class="add-fab secondary-fab sans" id="combinedPdfBtn">📋 Plan + étiquettes (PDF)</button>
+    </div>
   </div>
 
   <footer>Vos données restent sur cet appareil, dans ce navigateur. <span class="sans version-link" id="appVersion"></span></footer>
 </div>
 
+<!-- Vue enregistrée en grand -->
+<div class="modal-overlay hidden" id="viewFullOverlay">
+  <div class="modal">
+    <h2 id="viewFullTitle"></h2>
+    <img id="viewFullImg" style="width:100%;border-radius:3px;border:1px solid var(--line);">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="closeViewFullBtn">Fermer</button>
+      <button class="btn btn-secondary sans" id="deleteViewBtn" style="color:var(--danger);">🗑️ Supprimer cette vue</button>
+    </div>
+  </div>
+</div>
+
 <button id="floatingAddBtn" class="floating-add-btn" title="Créer une fiche" aria-label="Créer une fiche">+</button>
+
+<nav id="bottomTabBar" class="bottom-tab-bar sans">
+  <button data-view="view-home" class="tab-btn active">
+    <span class="tab-icon">🏠</span><span>Accueil</span>
+  </button>
+  <button data-view="view-map" class="tab-btn">
+    <span class="tab-icon">🗺️</span><span>Carte</span>
+  </button>
+  <button data-view="view-fiches" class="tab-btn">
+    <span class="tab-icon">🍑</span><span>Fiches</span>
+  </button>
+  <button data-view="view-stats" class="tab-btn">
+    <span class="tab-icon">📊</span><span>Stats</span>
+  </button>
+</nav>
 
 <!-- Add / edit plant modal -->
 <div class="modal-overlay hidden" id="addOverlay">
@@ -855,6 +879,11 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
   <div class="modal help-modal">
     <h2>❓ Comment ça marche</h2>
     <div class="help-content sans">
+
+      <div class="help-section">
+        <h3>🏠🗺️🍑📊 Les 4 onglets en bas</h3>
+        <p><b>Accueil</b> : météo, tâches, alertes. <b>Carte</b> : plan de ta parcelle. <b>Fiches</b> : tous tes fruits. <b>Stats</b> : graphique, statistiques, calendrier. Tape sur un onglet pour y aller directement, ou sur le <b>+</b> flottant pour créer une fiche depuis n'importe où.</p>
+      </div>
 
       <div class="help-section">
         <h3>🍑 Les fiches</h3>
@@ -3309,6 +3338,7 @@ document.getElementById('closeHelpBtn').onclick = ()=> document.getElementById('
 
 /* ---------------- Nouveautés / historique des versions ---------------- */
 const CHANGELOG = [
+  { v:'v2.6.0', items:['Vraies pages séparées façon appli native : 🏠 Accueil, 🗺️ Carte, 🍑 Fiches, 📊 Stats','Barre d\'onglets fixée en bas, accessible au pouce','Un seul écran affiché à la fois — fini le long défilement'] },
   { v:'v2.5.0', items:['Barre de navigation rapide collante (Accueil / Carte / Fiches / Stats) pour ne plus avoir à tout faire défiler','Panneau des fonds de carte replié par défaut, pour une section carte plus compacte','Boutons des cartes (supprimer/dupliquer/modifier) agrandis pour éviter les mauvais clics'] },
   { v:'v2.4.0', items:['Bouton flottant "+" toujours accessible, plus besoin de scroller en bas','Actions secondaires (export/import/partage/notifs) repliées par défaut pour un en-tête plus léger','Les fenêtres "Nouveau jardin" et "Renommer" remplacent les popups natives du téléphone, plus fiable'] },
   { v:'v2.3.0', items:['Export Excel/CSV','Déplacer une fiche vers un autre jardin','Tâches récurrentes (toutes les semaines / tous les mois)','Page "Nouveautés" (celle-ci !), accessible en tapant sur le numéro de version'] },
@@ -3852,7 +3882,7 @@ document.getElementById('combinedPdfBtn').onclick = generateCombinedPdf;
 
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v2.5.0';
+const APP_VERSION = 'v2.6.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
@@ -3866,27 +3896,25 @@ document.getElementById('fichesSearchInput').addEventListener('input', (e)=>{
   renderGrid();
 });
 
-/* ---------------- Navigation rapide collante ---------------- */
-const quickNavTargets = ['todaySection','mapSection','fichesSection','statsSection'];
-document.querySelectorAll('#quickNav button').forEach(btn=>{
-  btn.onclick = ()=>{
-    const el = document.getElementById(btn.dataset.target);
-    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
-  };
-});
-function updateQuickNavActive(){
-  const navHeight = document.getElementById('quickNav').offsetHeight;
-  let current = quickNavTargets[0];
-  for(const id of quickNavTargets){
-    const el = document.getElementById(id);
-    if(el && el.getBoundingClientRect().top - navHeight <= 80) current = id;
+/* ---------------- Navigation par onglets (écrans séparés) ---------------- */
+function showView(viewId){
+  document.querySelectorAll('.app-view').forEach(v => v.classList.toggle('active', v.id === viewId));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewId));
+  window.scrollTo(0, 0);
+  // Leaflet et Chart.js mesurent mal leur taille dans un conteneur qui était caché : on force un recalcul à l'affichage.
+  if(viewId === 'view-map' && leafletMap){
+    setTimeout(()=> leafletMap.invalidateSize(), 50);
   }
-  document.querySelectorAll('#quickNav button').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.target === current);
-  });
+  if(viewId === 'view-stats' && harvestChartInstance){
+    setTimeout(()=> harvestChartInstance.resize(), 50);
+  }
 }
-window.addEventListener('scroll', updateQuickNavActive, { passive:true });
-updateQuickNavActive();
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.onclick = ()=> showView(btn.dataset.view);
+});
+// Affiche d'abord tous les écrans pour que la carte et le graphique se dimensionnent correctement
+// à l'initialisation, puis ne garde que l'accueil visible une fois le rendu initial terminé.
+document.querySelectorAll('.app-view').forEach(v => v.classList.add('active'));
 
 /* Échap ferme la fenêtre ouverte la plus récente */
 document.addEventListener('keydown', (e)=>{
@@ -3899,6 +3927,7 @@ document.addEventListener('keydown', (e)=>{
 
 renderAll();
 loadWeather();
+showView('view-home'); // ne garde que l'accueil visible une fois que la carte/le graphique ont eu leur taille correcte
 
 /* ---------------- Raccourcis rapides (appui long sur l'icône, ?goto=...) ---------------- */
 (function handleShortcut(){
@@ -3907,11 +3936,11 @@ loadWeather();
   if(!goto) return;
   setTimeout(()=>{
     if(goto === 'add'){
-      document.getElementById('openAddBtn').click();
+      openAddModal();
     } else if(goto === 'tasks'){
-      document.querySelector('.tasks-panel').scrollIntoView({behavior:'smooth', block:'start'});
+      showView('view-home');
     } else if(goto === 'map'){
-      document.getElementById('leafletMap').scrollIntoView({behavior:'smooth', block:'start'});
+      showView('view-map');
     }
   }, 300);
 })();
