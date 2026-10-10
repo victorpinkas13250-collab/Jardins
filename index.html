@@ -137,6 +137,29 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
   margin:0 20px 14px;padding:10px 14px;border-radius:3px;font-size:.85rem;
 }
 .weather-alert.frost{background:#dceaf7;color:#1d4e73;border:1px solid #9dc3e0;}
+.weather-alert.heat{background:#fbe6d4;color:#8a3b10;border:1px solid #e8b48a;}
+.weather-alert.wind{background:#e6e9ee;color:#3a4350;border:1px solid #b9c0cc;}
+.weather-alert.hail{background:#e8e0f0;color:#43307a;border:1px solid #bfb1dc;}
+.month-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 20px 0;}
+.month-head .garden-btn{padding:6px 12px;}
+.month-head #monthLabel{font-weight:600;}
+.mc-block{padding:10px 20px 4px;}
+.mc-title{font-weight:600;font-size:.85rem;color:var(--olive-dark);margin-bottom:3px;}
+.mc-text{font-size:.92rem;line-height:1.45;}
+.mc-none{color:var(--bark-soft);font-style:italic;font-size:.85rem;}
+.mc-tips{margin:0;padding-left:18px;font-size:.9rem;line-height:1.5;}
+.mc-alert{display:flex;gap:8px;padding:8px 20px;font-size:.9rem;line-height:1.45;border-bottom:1px solid var(--line);}
+.compat-panel h2{background:#8a6a1f;}
+.diag-panel h2{background:#9a3b3b;}
+.tr-row{padding:6px 0;font-size:.9rem;line-height:1.45;border-bottom:1px dashed var(--line);}
+.diag-cause{padding:10px 12px;margin-bottom:8px;border:1px solid var(--line);border-radius:4px;font-size:.92rem;line-height:1.45;}
+.diag-sign{font-size:.8rem;color:var(--bark-soft);margin:3px 0;}
+.diag-act{margin-top:3px;}
+.mic-btn{margin-left:6px;border:1px solid var(--line);background:var(--cream);border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer;vertical-align:middle;}
+.mic-btn.listening{background:#c0392b;animation:micpulse 1s infinite;}
+@keyframes micpulse{50%{opacity:.5}}
+.season-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;}
+.season-row select{padding:8px 10px;border:1px solid var(--line);border-radius:3px;font-family:inherit;background:var(--cream);color:var(--bark);}
 .weather-alert.rain{background:#e2e7d4;color:var(--olive-dark);border:1px solid var(--line);}
 .chart-panel{background:var(--cream);border:1px solid var(--line);border-radius:3px;padding:16px;}
 .chart-controls{margin-bottom:12px;}
@@ -640,9 +663,32 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
       <div class="today-list" id="todayList"></div>
     </div>
 
+    <div class="today-panel" id="monthPanel">
+      <h2 class="sans">🗓️ Que faire ce mois-ci ?</h2>
+      <div class="month-head sans">
+        <button class="garden-btn sans" id="monthPrev" aria-label="Mois précédent">◀</button>
+        <span id="monthLabel"></span>
+        <button class="garden-btn sans" id="monthNext" aria-label="Mois suivant">▶</button>
+      </div>
+      <div id="monthBody"></div>
+    </div>
+
     <div class="today-panel tasks-panel">
       <h2 class="sans">✅ Tâches d'entretien</h2>
       <div class="today-list" id="tasksPanelList"></div>
+    </div>
+
+    <div class="today-panel compat-panel" id="compatPanel" style="display:none;">
+      <h2 class="sans">🐝 Compatibilités et voisinage</h2>
+      <div id="compatList"></div>
+    </div>
+
+    <div class="today-panel diag-panel">
+      <h2 class="sans">🩺 Ma plante a un problème</h2>
+      <div style="padding:14px 20px;">
+        <div class="mc-text" style="margin-bottom:10px;">Feuilles jaunes, taches, fruits qui tombent… choisis le symptôme et je te donne les causes probables et quoi faire.</div>
+        <button class="btn btn-primary sans" id="openDiagBtn">Faire un diagnostic</button>
+      </div>
     </div>
   </div>
 
@@ -731,6 +777,15 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
 
     <div class="section-title">📈 Statistiques</div>
     <div id="statsPanel" class="stats-grid"></div>
+
+    <div class="section-title">📄 Bilan de saison</div>
+    <div class="chart-panel">
+      <div class="mc-text">Un PDF récapitulatif : kilos, comparaison avec l'an dernier, meilleurs arbres avec photos.</div>
+      <div class="season-row sans">
+        <select id="seasonYear" aria-label="Année du bilan"></select>
+        <button class="btn btn-primary sans" id="seasonReportBtn">📄 Télécharger le bilan</button>
+      </div>
+    </div>
   </div>
 
   <div class="app-view" id="view-fiches">
@@ -849,6 +904,15 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
   </div>
 </div>
 
+<!-- Diagnostic modal -->
+<div class="modal-overlay hidden" id="diagOverlay">
+  <div class="modal">
+    <h2>🩺 Diagnostic</h2>
+    <div id="diagBody"></div>
+    <div class="modal-actions"><button class="btn btn-secondary" id="closeDiagBtn">Fermer</button></div>
+  </div>
+</div>
+
 <!-- Detail modal -->
 <div class="modal-overlay hidden" id="detailOverlay">
   <div class="modal">
@@ -961,6 +1025,11 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
       </div>
 
       <div class="help-section">
+        <h3>🗓️ Que faire ce mois-ci ?</h3>
+        <p>Sur l'accueil : ce qui se récolte, ce qui se taille et les conseils du mois (◀ ▶ pour voir les autres mois). En dessous, les alertes de compatibilité entre tes plantes et le bouton 🩺 de diagnostic. Les étiquettes PDF ont maintenant un QR code : colle-les sur l'arbre et scanne-les avec l'appareil photo pour ouvrir la fiche (sur le téléphone qui contient tes données).</p>
+      </div>
+
+      <div class="help-section">
         <h3>💾 Où sont mes données ?</h3>
         <p>Tout reste sur ton téléphone, dans ce navigateur. Rien n'est envoyé sur internet à part la carte, la météo, la recherche d'adresse et la photo envoyée à Pl@ntNet quand tu identifies une plante. Pense à exporter régulièrement.</p>
       </div>
@@ -986,6 +1055,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});</script>
 <script>
 /* ---------------- Fruit database (base climat national, décalée ensuite pour le climat méditerranéen) ---------------- */
 /* harvest: [moisDebut, moisFin] 1-12, peut chevaucher l'année (ex: [11,2]) */
@@ -2121,12 +2191,21 @@ async function loadWeather(){
   document.getElementById('weatherLocLabel').textContent = g0 ? g0.name : 'ton jardin';
 
   try{
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${g.center.lat}&longitude=${g.center.lng}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code&timezone=auto&forecast_days=6`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${g.center.lat}&longitude=${g.center.lng}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code,wind_gusts_10m_max&timezone=auto&forecast_days=6`;
     const res = await fetch(url);
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
+    if(!data || !data.daily || !data.daily.time) throw new Error('Réponse météo invalide');
+    try{ const wc = JSON.parse(localStorage.getItem('verger-weather-cache')||'{}'); wc[STATE.currentGardenId] = { t: Date.now(), data }; localStorage.setItem('verger-weather-cache', JSON.stringify(wc)); }catch(e2){}
     renderWeather(data);
   }catch(e){
+    let cached = null;
+    try{ const wc = JSON.parse(localStorage.getItem('verger-weather-cache')||'{}'); cached = wc[STATE.currentGardenId]; }catch(e2){}
+    if(cached && cached.data && cached.data.daily){
+      renderWeather(cached.data);
+      box.insertAdjacentHTML('afterbegin', '<div class="weather-alert rain">📴 Hors connexion : dernières prévisions connues (' + new Date(cached.t).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + ').</div>');
+      return;
+    }
     box.innerHTML = '<div class="today-empty sans">Météo indisponible (pas de connexion internet, ou service temporairement injoignable).</div>';
     console.error('Météo', e);
   }
@@ -2137,11 +2216,7 @@ function renderWeather(data){
   const d = data.daily;
   let alertsHTML = '';
 
-  const frostDay = d.time.findIndex((t,i)=> d.temperature_2m_min[i] <= 2);
-  if(frostDay !== -1){
-    const label = frostDay===0 ? "cette nuit" : "le " + fmtDate(new Date(d.time[frostDay]));
-    alertsHTML += `<div class="weather-alert frost">🥶 Risque de gel ${label} (${Math.round(d.temperature_2m_min[frostDay])}°C) — rentre les agrumes en pot ou protège-les.</div>`;
-  }
+  alertsHTML += buildPlantAlerts(d);
   const rainSoon = d.precipitation_sum[0] > 1 || d.precipitation_sum[1] > 1;
   const noRainNext3 = d.precipitation_sum.slice(0,3).every(v => v <= 1);
   if(rainSoon){
@@ -2325,6 +2400,9 @@ function renderAll(){
   renderHarvestChart();
   renderStats();
   renderCalendar();
+  renderMonthPanel();
+  renderCompatPanel();
+  refreshSeasonYears();
 }
 
 function renderTasksPanel(){
@@ -3490,6 +3568,7 @@ document.getElementById('closeHelpBtn').onclick = ()=> document.getElementById('
 
 /* ---------------- Nouveautés / historique des versions ---------------- */
 const CHANGELOG = [
+  { v:'v2.8.0', items:['🌦️ Alertes météo liées à TES plantes : gel, canicule, vent fort (mistral), grêle','🗓️ « Que faire ce mois-ci ? » : récoltes, tailles et conseils du mois pour le sud','🐝 Compatibilités : pollinisation (kiwi mâle/femelle…) et mauvais voisinages','🍯 Idées de transformation de la récolte (confiture, séchage, congélation)','🩺 Diagnostic : « ma plante a un problème »','📄 Bilan de saison en PDF','📱 QR code sur les étiquettes : scanne un arbre pour ouvrir sa fiche','🎤 Dictée vocale dans les champs texte','📴 Appli utilisable hors connexion (météo gardée en mémoire)'] },
   { v:'v2.7.0', items:['🔍 Identifier une plante inconnue depuis une photo, sans quitter l\'appli (service Pl@ntNet)','Touche la bonne suggestion : la fiche se remplit toute seule','Réglage de la clé gratuite dans ⋯ Plus d\'actions → 🔑 Clé d\'identification'] },
   { v:'v2.6.0', items:['Vraies pages séparées façon appli native : 🏠 Accueil, 🗺️ Carte, 🍑 Fiches, 📊 Stats','Barre d\'onglets fixée en bas, accessible au pouce','Un seul écran affiché à la fois — fini le long défilement'] },
   { v:'v2.5.0', items:['Barre de navigation rapide collante (Accueil / Carte / Fiches / Stats) pour ne plus avoir à tout faire défiler','Panneau des fonds de carte replié par défaut, pour une section carte plus compacte','Boutons des cartes (supprimer/dupliquer/modifier) agrandis pour éviter les mauvais clics'] },
@@ -3620,9 +3699,17 @@ function openDetail(id){
       <div class="tech-row"><span class="tech-label sans">Comment tailler / couper</span><span>${db.taille}</span></div>
       <div class="tech-row"><span class="tech-label sans">🤝 Bons voisins</span><span>${db.compagnons}</span></div>
       <div class="tech-row"><span class="tech-label sans">🚫 À éviter à proximité</span><span>${db.eviter}</span></div>
+      ${POLLINATION[p.type] ? `<div class="tech-row"><span class="tech-label sans">🐝 Pollinisation</span><span>${escapeHtml(POLLINATION[p.type].msg)}</span></div>` : ''}
     </div>
     <div class="tip-box sans"><b>Comment savoir qu'il est prêt</b>${db.tip}</div>
     <a class="learn-more-link sans" href="${buildLearnMoreUrl(p.type)}" target="_blank" rel="noopener">📖 Lire de vrais articles sur l'entretien du ${escapeHtml(p.type.toLowerCase())}</a>
+    <div class="detail-section">
+      <div class="detail-section-title sans">🍯 Que faire de la récolte ?</div>
+      ${transformHTML(p)}
+    </div>
+    <div class="detail-section">
+      <button class="btn btn-secondary sans" id="detailDiagBtn">🩺 Un problème avec cette plante ?</button>
+    </div>
     <div class="detail-section">
       <div class="detail-section-title sans">✅ Tâches d'entretien</div>
       <div id="taskListBox">${buildTasksHTML(p)}</div>
@@ -3657,6 +3744,8 @@ function openDetail(id){
   document.getElementById('moveFromDetailBtn').style.display = STATE.gardens.length > 1 ? 'inline-block' : 'none';
 
   document.getElementById('addTaskBtn').onclick = ()=> addTask(p.id);
+  document.getElementById('detailDiagBtn').onclick = ()=> openDiag(p.id);
+  attachMic(document.getElementById('newTaskLabel'));
   document.getElementById('addHarvestBtn').onclick = ()=> addHarvestEntry(p.id);
   document.querySelectorAll('.task-check').forEach(cb => cb.onchange = ()=> toggleTask(p.id, cb.dataset.taskId));
   document.querySelectorAll('.task-del-btn').forEach(btn => btn.onclick = ()=> deleteTask(p.id, btn.dataset.taskId));
@@ -3915,24 +4004,29 @@ function drawLabelPages(doc, plantsList, startNewPage){
     doc.rect(x, y, labelW, labelH);
     doc.setLineDashPattern([], 0);
 
+    const qr = makeQr(plantDeepLink(p));
+    const qrSize = 17;
+    const textCx = qr ? x + (labelW-qrSize-4)/2 : x + labelW/2;
+    const textW = qr ? labelW-qrSize-10 : labelW-6;
+    if(qr) drawQr(doc, qr, x+labelW-qrSize-2, y+(labelH-qrSize)/2, qrSize);
     const name = plantDisplayName(p);
     doc.setFont('times','bold');
     doc.setFontSize(11);
     doc.setTextColor(43,42,36);
-    const nameLines = doc.splitTextToSize(name, labelW-6);
-    doc.text(nameLines, x+labelW/2, y+labelH/2-2, { align:'center' });
+    const nameLines = doc.splitTextToSize(name, textW);
+    doc.text(nameLines, textCx, y+labelH/2-2, { align:'center' });
 
     if(p.variety){
       doc.setFont('helvetica','italic');
       doc.setFontSize(7.5);
       doc.setTextColor(92,88,72);
-      doc.text(p.variety, x+labelW/2, y+labelH/2 + (nameLines.length*4.2), { align:'center', maxWidth: labelW-6 });
+      doc.text(p.variety, textCx, y+labelH/2 + (nameLines.length*4.2), { align:'center', maxWidth: textW });
     }
     if(p.plantedDate){
       doc.setFont('helvetica','normal');
       doc.setFontSize(6.5);
       doc.setTextColor(140,138,128);
-      doc.text('planté '+fmtDate(new Date(p.plantedDate)), x+labelW/2, y+labelH-4, { align:'center' });
+      doc.text('planté '+fmtDate(new Date(p.plantedDate)), textCx, y+labelH-4, { align:'center' });
     }
   });
 }
@@ -4035,7 +4129,7 @@ document.getElementById('combinedPdfBtn').onclick = generateCombinedPdf;
 
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v2.7.0';
+const APP_VERSION = 'v2.8.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
@@ -4077,6 +4171,494 @@ document.addEventListener('keydown', (e)=>{
     openOverlays[openOverlays.length-1].classList.add('hidden');
   }
 });
+
+
+/* =====================================================================
+   v2.8.0 — Alertes météo, Ce mois-ci, compatibilités, transformations,
+   diagnostic, bilan de saison, QR, dictée vocale
+   ===================================================================== */
+
+/* ---------- Utilitaires ---------- */
+function plantsOfTypes(types){
+  return plants.filter(p => types.indexOf(p.type) !== -1);
+}
+function namesList(list, max){
+  const counts = {};
+  list.forEach(p => { counts[p.type] = (counts[p.type]||0)+1; });
+  const arr = Object.keys(counts).map(t => counts[t] > 1 ? t+' ×'+counts[t] : t);
+  max = max || 6;
+  return arr.length > max ? arr.slice(0,max).join(', ')+'…' : arr.join(', ');
+}
+function plantAgeYears(p){
+  if(!p.plantedDate) return null;
+  const d = new Date(p.plantedDate);
+  if(isNaN(d)) return null;
+  return (Date.now() - d.getTime()) / (365.25*86400000);
+}
+
+/* ---------- 1. Alertes météo liées à TES plantes ---------- */
+const FROST_SENSITIVE = ['Citron','Orange','Mandarine','Citron caviar','Kumquat','Yuzu','Combava','Pomelo','Cédrat','Feijoa','Basilic','Tomate','Melon','Pastèque','Physalis','Coriandre','Verveine citronnelle','Fruit de la passion (grenadille)','Figue','Olive','Grenade','Kaki'];
+const HEAT_SENSITIVE = ['Basilic','Persil','Menthe','Ciboulette','Coriandre','Aneth','Framboise','Myrtille','Airelle','Fraise','Groseille','Cassis','Tomate','Kiwi','Kiwaï'];
+
+function buildPlantAlerts(d){
+  let html = '';
+  const n = d.time.length;
+  // Gel : liste des plantes sensibles réellement présentes dans ce jardin
+  const frostIdx = d.temperature_2m_min.findIndex(v => v <= 2);
+  if(frostIdx !== -1){
+    const label = frostIdx===0 ? 'cette nuit' : 'le '+fmtDate(new Date(d.time[frostIdx]));
+    const mine = plantsOfTypes(FROST_SENSITIVE);
+    html += `<div class="weather-alert frost">🥶 Risque de gel ${label} (${Math.round(d.temperature_2m_min[frostIdx])}°C)`
+      + (mine.length ? ` — à protéger (voile d'hivernage, ou rentrer si en pot) : <b>${escapeHtml(namesList(mine))}</b>.` : ' — rien de sensible dans ce jardin.')
+      + `</div>`;
+  }
+  // Canicule
+  const heatIdx = d.temperature_2m_max.findIndex(v => v >= 35);
+  if(heatIdx !== -1){
+    const label = heatIdx===0 ? "aujourd'hui" : 'le '+fmtDate(new Date(d.time[heatIdx]));
+    const mine = plantsOfTypes(HEAT_SENSITIVE);
+    html += `<div class="weather-alert heat">🔥 Forte chaleur ${label} (${Math.round(d.temperature_2m_max[heatIdx])}°C) — arrose tôt le matin ou le soir, paille le pied, ne taille pas.`
+      + (mine.length ? ` Plus fragiles : <b>${escapeHtml(namesList(mine))}</b>.` : '')
+      + `</div>`;
+  }
+  // Vent (mistral)
+  if(d.wind_gusts_10m_max){
+    const wi = d.wind_gusts_10m_max.findIndex(v => v >= 60);
+    if(wi !== -1){
+      const label = wi===0 ? "aujourd'hui" : 'le '+fmtDate(new Date(d.time[wi]));
+      const young = plants.filter(p => { const a = plantAgeYears(p); return a !== null && a < 3; });
+      html += `<div class="weather-alert wind">💨 Vent fort ${label} (rafales ${Math.round(d.wind_gusts_10m_max[wi])} km/h) — vérifie les tuteurs et les attaches`
+        + (young.length ? ` des jeunes arbres : <b>${escapeHtml(namesList(young))}</b>.` : '.')
+        + `</div>`;
+    }
+  }
+  // Grêle / orage violent (codes 96 et 99)
+  const hailIdx = d.weather_code.findIndex(c => c === 96 || c === 99);
+  if(hailIdx !== -1){
+    const label = hailIdx===0 ? "aujourd'hui" : 'le '+fmtDate(new Date(d.time[hailIdx]));
+    html += `<div class="weather-alert hail">🧊 Orage avec risque de grêle ${label} — si tu as des filets de protection, c'est le moment de les poser sur les fruits proches de la maturité.</div>`;
+  }
+  return html;
+}
+
+/* ---------- 2. Que faire ce mois-ci ? ---------- */
+const MONTH_TIPS = [
+  ["Plante les arbres à racines nues (hors gel).","Taille pommiers, poiriers et vigne par temps sec, hors gel.","Désinfecte le sécateur entre deux arbres."],
+  ["Bouillie bordelaise sur pêchers/nectariniers avant le débourrement (contre la cloque).","Termine la taille des fruitiers à pépins.","Plante framboisiers, groseilliers, myrtilliers."],
+  ["Apporte du compost au pied des arbres.","Plante les aromatiques vivaces (thym, romarin, sauge, origan).","Surveille les gelées tardives sur les arbres en fleurs."],
+  ["Plante agrumes et plants sensibles une fois les gelées passées.","Pose un paillage épais avant l'été.","Garde un voile d'hivernage à portée de main."],
+  ["Éclaircis les fruits (pêches, abricots, pommes) : un fruit tous les 10 cm environ.","Plante basilic, tomates, physalis.","Pose les pièges à carpocapse (pomme, poire, noix)."],
+  ["Arrose profondément et rarement plutôt que souvent et peu.","Récolte cerises, abricots, premiers petits fruits.","Taille en vert : pince les gourmands."],
+  ["Chaleur : arrose tôt le matin ou le soir.","Taille cerisiers, abricotiers, pruniers APRÈS la récolte (moins de maladies).","Cueille et sèche les aromatiques avant floraison."],
+  ["Protège les fruits du coup de soleil (argile blanche/kaolin).","Récolte figues, raisin, prunes, pêches tardives.","Ramasse les fruits tombés (maladies et mouches)."],
+  ["Récolte raisin, figues, grenades, premières pommes.","Prépare le sol des futures plantations (compost, décompactage).","Commande tes arbres à racines nues pour novembre."],
+  ["Ramasse les fruits tombés et les feuilles malades.","Bonne saison de plantation dans le sud (sol chaud, pluies d'automne).","Récolte kakis, coings, grenades, olives."],
+  ["Plante les arbres à racines nues dès la chute des feuilles.","Bouillie bordelaise à la chute des feuilles.","Protège les jeunes agrumes dès les premiers froids."],
+  ["Plante (hors gel) et taille doucement les fruitiers à pépins.","Récolte agrumes et olives noires.","Nettoie, affûte et désinfecte tes outils."]
+];
+let monthOffset = 0;
+
+function windowsOverlapMonth(range, ref){
+  const mStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
+  const mEnd = new Date(ref.getFullYear(), ref.getMonth()+1, 0);
+  for(let dy=-1; dy<=1; dy++){
+    const w = windowForYear(range[0], range[1], ref.getFullYear()+dy);
+    if(w.start <= mEnd && w.end >= mStart) return true;
+  }
+  return false;
+}
+function renderMonthPanel(){
+  const box = document.getElementById('monthBody');
+  if(!box) return;
+  const now = today();
+  const ref = new Date(now.getFullYear(), now.getMonth()+monthOffset, 1);
+  document.getElementById('monthLabel').textContent = MONTHS_LONG[ref.getMonth()].charAt(0).toUpperCase()+MONTHS_LONG[ref.getMonth()].slice(1)+' '+ref.getFullYear();
+  const harv = [], prune = [];
+  plants.forEach(p => {
+    const db = FRUIT_DB[p.type]; if(!db) return;
+    if(db.harvest && windowsOverlapMonth(db.harvest, ref)) harv.push(p);
+    if(db.prune && windowsOverlapMonth(db.prune, ref)) prune.push(p);
+  });
+  let h = '';
+  h += `<div class="mc-block"><div class="mc-title sans">🧺 À récolter</div>`
+    + (harv.length ? `<div class="mc-text">${escapeHtml(namesList(harv, 12))}</div>` : `<div class="mc-text mc-none">Rien de prévu ce mois-ci.</div>`) + `</div>`;
+  h += `<div class="mc-block"><div class="mc-title sans">✂️ À tailler / entretenir</div>`
+    + (prune.length ? `<div class="mc-text">${escapeHtml(namesList(prune, 12))}</div>` : `<div class="mc-text mc-none">Pas de taille conseillée ce mois-ci.</div>`) + `</div>`;
+  h += `<div class="mc-block"><div class="mc-title sans">🌿 Dans le jardin (sud de la France)</div><ul class="mc-tips">`
+    + MONTH_TIPS[ref.getMonth()].map(t => `<li>${escapeHtml(t)}</li>`).join('') + `</ul></div>`;
+  box.innerHTML = h;
+}
+document.getElementById('monthPrev').onclick = ()=>{ monthOffset--; renderMonthPanel(); };
+document.getElementById('monthNext').onclick = ()=>{ monthOffset++; renderMonthPanel(); };
+
+/* ---------- 7. Pollinisation et mauvais voisinages ---------- */
+const POLLINATION = {
+  'Kiwi':{lvl:'dioique',msg:"Le kiwi est mâle OU femelle : sans un pied mâle (1 pour 5 à 8 femelles) à proximité, pas de fruits."},
+  'Kiwaï':{lvl:'dioique',msg:"La plupart des kiwaïs sont mâles ou femelles : il faut un pied de chaque sexe (sauf variétés dites autofertiles comme 'Issai')."},
+  'Pistache':{lvl:'dioique',msg:"Le pistachier est mâle OU femelle : il faut un pied mâle pour que les femelles donnent."},
+  'Argousier':{lvl:'dioique',msg:"L'argousier est mâle OU femelle : seuls les pieds femelles donnent des baies, avec un mâle à côté."},
+  'Pomme':{lvl:'croise',msg:"La plupart des pommiers ont besoin d'une AUTRE variété qui fleurit en même temps pour bien produire."},
+  'Poire':{lvl:'croise',msg:"La plupart des poiriers produisent mieux (ou seulement) avec une autre variété à proximité."},
+  'Cerise':{lvl:'croise',msg:"Beaucoup de cerisiers doux (type Burlat) ont besoin d'une autre variété ; les griottiers sont plutôt autofertiles."},
+  'Prune':{lvl:'croise',msg:"Beaucoup de pruniers (quetsche, reine-claude selon variété) donnent mieux avec une autre variété à côté."},
+  'Amande':{lvl:'croise',msg:"Beaucoup d'amandiers ont besoin d'une autre variété (ex. Ferragnès + Ferraduel) ; Lauranne ou Tuono sont autofertiles."},
+  'Olive':{lvl:'mieux',msg:"L'olivier est partiellement autofertile : 2 variétés différentes améliorent nettement la récolte."},
+  'Myrtille':{lvl:'mieux',msg:"La myrtille donne plus et de plus gros fruits avec 2 variétés différentes."},
+  'Feijoa':{lvl:'mieux',msg:"Le feijoa fructifie mieux avec 2 plants ou 2 variétés."},
+  'Châtaigne':{lvl:'mieux',msg:"Le châtaignier fructifie mieux avec 2 variétés différentes."}
+};
+// Mauvais voisinages dérivés des fiches (juglone du noyer, etc.)
+const CLASHES = [
+  ['Noix',['Pomme','Cerise','Kiwi','Kiwaï','Framboise','Tomate','Fruit de la passion (grenadille)'],"le noyer libère de la juglone, qui freine ces plantes"],
+  ['Framboise',['Prune','Mirabelle','Tomate','Mûre'],"maladies communes (verticilliose, rouille)"],
+  ['Pêche',['Tomate'],"sensibilité croisée aux maladies"],
+  ['Nectarine',['Tomate'],"sensibilité croisée aux maladies"],
+  ['Abricot',['Tomate'],"sensibilité croisée aux maladies"],
+  ['Menthe',['Persil'],"la menthe envahit et étouffe le persil (garde-la en pot enterré)"],
+  ['Aneth',['Tomate'],"inhibition mutuelle quand ils sont trop proches"],
+  ['Basilic',[],""]
+];
+function buildCompatAlerts(){
+  const out = [];
+  Object.keys(POLLINATION).forEach(t => {
+    const list = plants.filter(p => p.type === t);
+    if(!list.length) return;
+    const r = POLLINATION[t];
+    const varieties = new Set(list.map(p => (p.variety||'').trim().toLowerCase()).filter(Boolean));
+    if(r.lvl === 'dioique'){
+      if(list.length < 2) out.push({ icon:'🐝', text:`<b>${escapeHtml(t)}</b> : tu n'as qu'un seul pied. ${escapeHtml(r.msg)}` });
+    } else if(r.lvl === 'croise'){
+      if(list.length < 2) out.push({ icon:'🐝', text:`<b>${escapeHtml(t)}</b> : un seul arbre. ${escapeHtml(r.msg)}` });
+      else if(varieties.size < 2) out.push({ icon:'🐝', text:`<b>${escapeHtml(t)}</b> : ${list.length} arbres mais variétés non renseignées ou identiques. ${escapeHtml(r.msg)}` });
+    } else if(r.lvl === 'mieux'){
+      if(list.length < 2) out.push({ icon:'💡', text:`<b>${escapeHtml(t)}</b> : ${escapeHtml(r.msg)}` });
+    }
+  });
+  CLASHES.forEach(c => {
+    if(!plants.some(p => p.type === c[0])) return;
+    c[1].forEach(o => {
+      if(plants.some(p => p.type === o)) out.push({ icon:'⚠️', text:`<b>${escapeHtml(c[0])}</b> et <b>${escapeHtml(o)}</b> : ${escapeHtml(c[2])}. Garde-les éloignés.` });
+    });
+  });
+  return out;
+}
+function renderCompatPanel(){
+  const panel = document.getElementById('compatPanel');
+  if(!panel) return;
+  const items = buildCompatAlerts();
+  if(!items.length){ panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  document.getElementById('compatList').innerHTML = items.map(i => `<div class="mc-alert"><span>${i.icon}</span><span>${i.text}</span></div>`).join('')
+    + `<div class="mc-text mc-none" style="margin-top:6px;">Ce sont des règles générales : selon les variétés, il peut y avoir des exceptions.</div>`;
+}
+
+/* ---------- 8. Que faire de la récolte ? ---------- */
+const TRANSFORM_GROUP = {
+  'Figue':'figue','Pomme':'pepin','Poire':'pepin','Coing':'pepin','Nèfle':'pepin','Poire asiatique (Nashi)':'pepin',
+  'Pêche':'noyau','Abricot':'noyau','Prune':'noyau','Cerise':'noyau','Mirabelle':'noyau','Nectarine':'noyau','Pêche de vigne':'noyau','Jujube':'noyau',
+  'Citron':'agrume','Orange':'agrume','Mandarine':'agrume','Pomelo':'agrume','Cédrat':'agrume','Kumquat':'agrume','Yuzu':'agrume','Citron caviar':'agrume','Combava':'agrume',
+  'Framboise':'baie','Fraise':'baie','Groseille':'baie','Cassis':'baie','Mûre':'baie','Myrtille':'baie','Airelle':'baie','Goji':'baie','Argousier':'baie','Physalis':'baie','Arbouse':'baie',
+  'Raisin de table':'raisin','Raisin de cuve':'raisin','Olive':'olive','Noix':'sec','Amande':'sec','Châtaigne':'sec','Pistache':'sec'
+};
+const TRANSFORM = {
+  figue:[["🍯 Confiture","Environ 600 g de sucre par kg de figues, un peu de citron. Cuis 20 à 30 min, mets en pots stérilisés et retourne-les. Se garde environ 1 an à l'abri de la lumière."],["☀️ Séchage","Déshydrateur ou four à 55–60 °C porte entrouverte, 10 à 20 h selon la taille. Les figues sèches se gardent plusieurs mois en boîte hermétique."],["❄️ Congélation","À plat sur un plateau, puis en sachet : 6 à 8 mois."]],
+  pepin:[["🥣 Compote","Fruits en morceaux, un peu d'eau, 20 à 30 min. En bocaux, pasteurise 15 à 20 min au bain-marie bouillant selon la taille."],["🍯 Gelée / pâte de fruit","Très riches en pectine : excellent pour la gelée (coing surtout)."],["🍂 Séchage","Rondelles fines à 55–60 °C, 6 à 10 h. Citronne-les avant pour qu'elles ne noircissent pas."]],
+  noyau:[["🍯 Confiture","Environ 500 à 600 g de sucre par kg de fruits dénoyautés. Cuis 15 à 25 min, pots stérilisés retournés."],["🫙 Bocaux au sirop","Pasteurise 20 min au bain-marie bouillant. Se garde 1 an."],["❄️ Congélation","Dénoyauté, à plat sur plateau puis en sachet : 8 à 10 mois."]],
+  agrume:[["🍋 Zestes et jus","Zeste avant de presser (fruits non traités), jus congelé en bacs à glaçons."],["🍯 Marmelade","Compte environ 1 kg de sucre pour 1 kg de fruits entiers coupés. Longue cuisson, 2 à 3 h de repos avant."],["🧂 Citrons confits","Sel et jus de citron en bocal, prêts en 3 à 4 semaines."]],
+  baie:[["🍯 Confiture","500 g de sucre par kg de fruits. Cuis 10 à 15 min seulement pour garder le goût."],["❄️ Congélation","À plat sur plateau PUIS en sachet : elles ne collent pas entre elles. 8 à 12 mois."],["🥤 Coulis / sirop","Mixe, passe, sucre léger, au congélateur en petites portions."]],
+  raisin:[["🥤 Jus frais","Presse ou centrifuge, à boire dans les 2 à 3 jours au frais."],["☀️ Raisins secs","Séchage lent 55–60 °C, 12 à 24 h."],["🍯 Gelée","Jus + sucre à parts à peu près égales."]],
+  olive:[["🫒 Olives cassées","Casse, dessale à l'eau renouvelée pendant plusieurs jours, puis saumure aromatisée. Se déguste après quelques semaines."],["🛢️ Huile","À faire presser dans un moulin proche dès la récolte (pas plus de quelques jours d'attente)."]],
+  sec:[["☀️ Séchage","Étale en une couche, à l'air sec et aéré, 2 à 4 semaines selon le fruit, avant stockage en filet."],["📦 Stockage","Au frais, au sec et à l'abri des rongeurs, en filet ou caisse aérée."]],
+  fruit:[["🍯 Confiture","Environ 500 à 600 g de sucre par kg de fruits, pots stérilisés."],["❄️ Congélation","À plat sur plateau puis en sachet : plusieurs mois."]],
+  herbe:[["🌿 Séchage","En petits bouquets, tête en bas, à l'ombre et au sec, ou déshydrateur à 35–40 °C. Garde en bocal fermé à l'abri de la lumière."],["🧊 Congélation","Hachées dans un bac à glaçons avec un peu d'eau ou d'huile (au congélateur)."],["⚠️ Huile aromatisée","Ne la conserve pas à température ambiante (risque de botulisme) : au frigo, 1 semaine maximum."]]
+};
+function transformHTML(p){
+  const db = FRUIT_DB[p.type];
+  if(!db) return '';
+  const grp = db.cat === 'herb' ? 'herbe' : (TRANSFORM_GROUP[p.type] || 'fruit');
+  const tips = TRANSFORM[grp] || TRANSFORM.fruit;
+  const y = today().getFullYear();
+  const kg = (p.harvestLog||[]).filter(h => h.date && new Date(h.date).getFullYear() === y).reduce((s,h)=> s + (parseFloat(h.qty)||0), 0);
+  let head = '';
+  if(kg > 0 && (grp==='figue'||grp==='noyau'||grp==='baie'||grp==='pepin'||grp==='agrume'||grp==='fruit')){
+    head = `<div class="hint sans" style="margin-bottom:6px;">Cette année : <b>${kg.toLocaleString('fr-FR',{maximumFractionDigits:1})} kg</b> récoltés — ça fait environ <b>${Math.round(kg*4)} pots de confiture de 300 g</b> (≈ 4 pots par kg de fruits).</div>`;
+  }
+  return head + tips.map(t => `<div class="tr-row"><b>${t[0]}</b><div>${escapeHtml(t[1])}</div></div>`).join('');
+}
+
+/* ---------- 5. Diagnostic : « ma plante a un problème » ---------- */
+const DIAG = [
+  {s:'Feuilles qui jaunissent', i:'🟡', c:[
+    ['Trop d\'eau / sol qui ne draine pas','Jaunissement général, sol détrempé, feuilles qui tombent.','Espace les arrosages, améliore le drainage, jamais de soucoupe pleine pour un pot.'],
+    ['Chlorose (calcaire, fréquent dans le sud)','Jaune entre les nervures, nervures restent vertes, surtout sur les jeunes feuilles.','Chélate de fer au pied (suis la dose de l\'étiquette), arrose avec une eau peu calcaire, paille avec du compost.'],
+    ['Manque d\'azote','Jaune pâle uniforme sur les vieilles feuilles, pousses faibles.','Compost mûr ou corne broyée au printemps.'],
+    ['Chute d\'automne normale','Jaunissement de toutes les feuilles en octobre-novembre.','Rien à faire : ramasse les feuilles.']]},
+  {s:'Taches brunes ou noires sur les feuilles', i:'🟤', c:[
+    ['Tavelure (pommier, poirier)','Taches olive puis noires, aussi sur les fruits.','Ramasse toutes les feuilles tombées, aère la taille, cuivre à la chute des feuilles puis au débourrement (selon étiquette).'],
+    ['Maladie criblée (pêcher, abricotier, cerisier, prunier)','Petites taches qui se percent comme des plombs.','Supprime les rameaux atteints, cuivre à la chute des feuilles, évite d\'arroser le feuillage.'],
+    ['Rouille ou autres champignons','Taches orangées ou brunes avec poudre dessous.','Retire les feuilles atteintes, aère, ne mouille pas le feuillage.']]},
+  {s:'Feuilles enroulées, cloquées ou déformées', i:'🌀', c:[
+    ['Pucerons','Feuilles enroulées, petits insectes dessous, miellat collant.','Jet d\'eau, savon noir dilué, laisse agir les coccinelles.'],
+    ['Cloque du pêcher','Feuilles boursouflées et rouges au printemps.','Retire les feuilles atteintes ; l\'an prochain : cuivre en fin d\'hiver AVANT le débourrement.'],
+    ['Sécheresse ou chaleur','Feuilles qui se roulent pour réduire l\'évaporation.','Arrosage profond tôt le matin, paillage.']]},
+  {s:'Poudre blanche sur les feuilles', i:'⚪', c:[
+    ['Oïdium','Feutrage blanc qui s\'essuie au doigt (vigne, pommier, rosier, courgette).','Soufre mouillable en traitement préventif. Jamais au-dessus de 28 °C : ça brûle les feuilles. Aère et évite l\'excès d\'azote.']]},
+  {s:'Miellat collant, fourmis, suie noire', i:'🐜', c:[
+    ['Pucerons ou cochenilles','Feuilles collantes, enduit noir (fumagine), fourmis qui montent.','Jet d\'eau, savon noir ; huile blanche en hiver pour les cochenilles ; bande de glu autour du tronc contre les fourmis.']]},
+  {s:'Fruits qui tombent avant maturité', i:'🍂', c:[
+    ['Chute physiologique','Petits fruits qui tombent en mai-juin : l\'arbre s\'éclaircit tout seul.','Normal. Éclaircis toi-même si la charge reste trop forte.'],
+    ['Ver (carpocapse sur pomme, poire, noix)','Trou et sciure, ver à l\'intérieur.','Piège à phéromone dès mai, filet, ramasse les fruits tombés.'],
+    ['Manque d\'eau ou gel des fleurs','Fruits petits qui jaunissent puis tombent.','Arrosage régulier ; voile pendant les gelées de floraison.']]},
+  {s:'Fruits véreux ou piqués', i:'🪱', c:[
+    ['Carpocapse (pomme, poire, noix)','Trou avec ver et déjections.','Pièges à phéromones, bande de carton ondulé autour du tronc, ramassage des fruits tombés.'],
+    ['Mouche méditerranéenne (pêche, figue, agrumes)','Piqûres puis pourriture.','Pièges alimentaires, ramassage et destruction des fruits piqués.'],
+    ['Mouche de l\'olive','Olives piquées, chair brune.','Piège à mouches, argile blanche (kaolin) préventive, récolte précoce.'],
+    ['Drosophile suzukii (cerises, petits fruits)','Fruits mous et ridés qui s\'affaissent.','Filet insect-proof à mailles fines, récolte rapide.']]},
+  {s:'Fruits qui pourrissent / momies sur l\'arbre', i:'🍑', c:[
+    ['Moniliose','Pourriture avec petits coussinets beiges en cercles, fruits qui se momifient.','Retire et détruis toutes les momies (arbre ET sol), coupe les rameaux atteints 10 cm plus bas, cuivre en hiver.']]},
+  {s:'Fruits fendus', i:'💥', c:[
+    ['Arrosage irrégulier','Sécheresse puis grosse pluie : la chair gonfle plus vite que la peau.','Arrosage régulier et paillage. Concerne cerise, figue, tomate, raisin.']]},
+  {s:'Pointes et bords secs, feuilles brûlées', i:'🔥', c:[
+    ['Coup de soleil, chaleur, mistral','Brûlures sur le côté exposé, bords bruns.','Paillage, arrosage profond, ombrage temporaire sur jeunes plants.'],
+    ['Sel ou excès d\'engrais','Bords des feuilles brûlés sur plante en pot.','Rince le pot à grande eau, réduis les apports.'],
+    ['Feu bactérien (poirier, pommier, cognassier)','Rameaux noircis comme brûlés, extrémité recourbée en crosse.','Maladie réglementée : coupe 30 à 50 cm en dessous du mal, désinfecte le sécateur, brûle les déchets et informe la FREDON de ta région.']]},
+  {s:'Branche ou arbre qui dessèche', i:'🥀', c:[
+    ['Asphyxie racinaire ou pourriture du collet','Feuilles qui flétrissent alors que le sol est humide.','Dégage le collet, drainage, arrose moins.'],
+    ['Chancre ou gel','Écorce craquelée ou enfoncée sur la branche concernée.','Coupe jusqu\'au bois sain, désinfecte, cicatrisant non nécessaire.'],
+    ['Soupçon de Xylella (surveillée dans le sud)','Dessèchement rapide de plusieurs plantes (olivier, amandier, lavande...).','Si plusieurs plantes sont touchées, signale-le à la FREDON ou à la DRAAF.']]},
+  {s:'Pas de fleurs ou pas de fruits', i:'🌸', c:[
+    ['Arbre trop jeune','Normal les premières années (3 à 5 ans selon l\'espèce).','Patience : évite la taille sévère.'],
+    ['Taille trop sévère ou trop d\'azote','Belle pousse mais pas de fruits.','Taille légère, supprime l\'engrais azoté.'],
+    ['Pas de pollinisateur','Fleurs mais pas de fruits (kiwi, pistachier, pommier...).','Voir « Compatibilités » dans l\'accueil.'],
+    ['Pas assez de soleil, ou gel de fleurs','Moins de 6 h de soleil par jour, ou gelée pendant la floraison.','Déplace si possible, voile pendant les gelées.']]},
+  {s:'Écoulement de gomme sur l\'écorce', i:'🍯', c:[
+    ['Stress sur prunus (pêcher, abricotier, cerisier)','Gomme ambrée sur tronc ou branches.','Vérifie arrosage et drainage, évite les blessures, taille en été sec ; ne mets pas de mastic.']]},
+  {s:'Feuilles grignotées ou trouées', i:'🐛', c:[
+    ['Chenilles','Gros trous irréguliers, crottes noires.','Ramassage à la main ; Bt (Bacillus thuringiensis) autorisé en bio.'],
+    ['Limaces et escargots (jeunes plants)','Trous nets, traînées argentées.','Ramassage le soir, cendres/sable autour du pied, pièges à bière.'],
+    ['Charançons','Encoches en demi-lune sur les bords.','Secoue sur un drap le soir, ramasse.']]}
+];
+let diagPlantId = null;
+function openDiag(plantId){
+  diagPlantId = plantId || null;
+  showDiagList();
+  document.getElementById('diagOverlay').classList.remove('hidden');
+}
+function showDiagList(){
+  const p = diagPlantId ? plants.find(x=>x.id===diagPlantId) : null;
+  const db = p && FRUIT_DB[p.type];
+  let h = `<div class="hint sans" style="margin-bottom:8px;">Touche ce que tu observes${p ? ' sur <b>'+escapeHtml(plantDisplayName(p))+'</b>' : ''} :</div>`;
+  h += DIAG.map((d,i)=>`<button type="button" class="btn btn-secondary sans diag-pick" data-i="${i}" style="display:block;width:100%;text-align:left;margin-bottom:6px;">${d.i} ${escapeHtml(d.s)}</button>`).join('');
+  if(db && db.maladies) h += `<div class="tip-box sans" style="margin-top:8px;"><b>Maladies courantes de ce fruit</b>${db.maladies}</div>`;
+  document.getElementById('diagBody').innerHTML = h;
+  document.querySelectorAll('.diag-pick').forEach(b => b.onclick = ()=> showDiagResult(+b.dataset.i));
+}
+function showDiagResult(i){
+  const d = DIAG[i];
+  let h = `<button type="button" class="btn btn-secondary sans" id="diagBackBtn" style="margin-bottom:10px;">← Autres symptômes</button>`;
+  h += `<div style="font-weight:600;margin-bottom:8px;">${d.i} ${escapeHtml(d.s)}</div>`;
+  h += d.c.map(c => `<div class="diag-cause"><b>${escapeHtml(c[0])}</b><div class="diag-sign sans">À reconnaître : ${escapeHtml(c[1])}</div><div class="diag-act">➜ ${escapeHtml(c[2])}</div></div>`).join('');
+  h += `<div class="hint sans" style="font-size:11px;margin-top:8px;">Guide d'orientation, pas un diagnostic certain : plusieurs causes se ressemblent. Pour tout produit, lis l'étiquette et respecte les doses.</div>`;
+  document.getElementById('diagBody').innerHTML = h;
+  document.getElementById('diagBackBtn').onclick = showDiagList;
+}
+document.getElementById('openDiagBtn').onclick = ()=> openDiag(null);
+document.getElementById('closeDiagBtn').onclick = ()=> document.getElementById('diagOverlay').classList.add('hidden');
+document.getElementById('diagOverlay').onclick = (e)=>{ if(e.target.id==='diagOverlay') e.target.classList.add('hidden'); };
+
+/* ---------- 6. Bilan de saison (PDF) ---------- */
+function harvestYears(){
+  const ys = new Set();
+  plants.forEach(p => (p.harvestLog||[]).forEach(h => { if(h.date){ const y = new Date(h.date).getFullYear(); if(!isNaN(y)) ys.add(y); } }));
+  return [...ys].sort((a,b)=>b-a);
+}
+function refreshSeasonYears(){
+  const sel = document.getElementById('seasonYear');
+  if(!sel) return;
+  const ys = harvestYears();
+  if(!ys.length) ys.push(today().getFullYear());
+  const cur = sel.value;
+  sel.innerHTML = ys.map(y => `<option value="${y}">${y}</option>`).join('');
+  if(cur && ys.map(String).indexOf(cur) !== -1) sel.value = cur;
+}
+function seasonData(year){
+  const perType = {}; const perMonth = new Array(12).fill(0);
+  let total = 0, count = 0;
+  const perPlant = [];
+  plants.forEach(p => {
+    let kg = 0, n = 0;
+    (p.harvestLog||[]).forEach(h => {
+      if(!h.date) return;
+      const d = new Date(h.date);
+      if(d.getFullYear() !== year) return;
+      const q = parseFloat(h.qty)||0;
+      kg += q; n++; perMonth[d.getMonth()] += q;
+    });
+    if(n){
+      perPlant.push({ p, kg, n });
+      const t = perType[p.type] || (perType[p.type] = { kg:0, n:0, plants:0 });
+      t.kg += kg; t.n += n; t.plants++;
+      total += kg; count += n;
+    }
+  });
+  return { year, total, count, perType, perMonth, perPlant };
+}
+async function generateSeasonReport(){
+  const year = parseInt(document.getElementById('seasonYear').value, 10) || today().getFullYear();
+  const D = seasonData(year);
+  const prev = seasonData(year-1);
+  if(!D.count){ alert('Aucune récolte enregistrée pour '+year+'. Ajoute des entrées dans le journal des récoltes de tes fiches.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = 210, M = 15;
+  const g0 = STATE.gardens.find(x=>x.id===STATE.currentGardenId);
+  const fmt = n => n.toLocaleString('fr-FR',{maximumFractionDigits:1});
+  doc.setFillColor(74,93,50); doc.rect(0,0,W,34,'F');
+  doc.setTextColor(255,255,255); doc.setFont('times','bold'); doc.setFontSize(22);
+  doc.text('Bilan de saison '+year, M, 18);
+  doc.setFont('helvetica','normal'); doc.setFontSize(11);
+  doc.text((g0 ? g0.name : 'Mon jardin')+'  —  Le Carnet du Verger', M, 27);
+  let y = 46;
+  doc.setTextColor(43,42,36);
+  // Chiffres clés
+  const types = Object.keys(D.perType).sort((a,b)=> D.perType[b].kg - D.perType[a].kg);
+  const best = types[0];
+  const keys = [
+    [fmt(D.total)+' kg','récoltés au total'],
+    [String(D.count),'récoltes notées'],
+    [String(D.perPlant.length),'plantes productives'],
+    [best || '—','fruit n°1']
+  ];
+  const bw = (W-2*M-9)/4;
+  keys.forEach((k,i)=>{
+    const x = M + i*(bw+3);
+    doc.setFillColor(238,241,228); doc.roundedRect(x,y,bw,22,2,2,'F');
+    doc.setFont('times','bold'); doc.setFontSize(14); doc.setTextColor(74,93,50);
+    doc.text(doc.splitTextToSize(k[0], bw-4), x+bw/2, y+10, {align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(110,106,90);
+    doc.text(k[1], x+bw/2, y+18, {align:'center'});
+  });
+  y += 30;
+  // Comparaison avec l'an dernier
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(43,42,36);
+  if(prev.total > 0){
+    const diff = D.total - prev.total, pct = Math.round(diff/prev.total*100);
+    doc.text(`Par rapport à ${year-1} (${fmt(prev.total)} kg) : ${diff>=0?'+':''}${fmt(diff)} kg (${pct>=0?'+':''}${pct} %).`, M, y);
+  } else {
+    doc.text(`Pas de données pour ${year-1} : cette saison sert de référence.`, M, y);
+  }
+  y += 10;
+  // Histogramme mensuel
+  doc.setFont('times','bold'); doc.setFontSize(12); doc.text('Récoltes mois par mois (kg)', M, y); y += 4;
+  const chartH = 40, chartW = W-2*M, maxV = Math.max.apply(null, D.perMonth.concat([1]));
+  const bwid = chartW/12;
+  doc.setDrawColor(200,200,190); doc.line(M, y+chartH, M+chartW, y+chartH);
+  const mn = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+  D.perMonth.forEach((v,i)=>{
+    const h = v/maxV*(chartH-8);
+    doc.setFillColor(138,155,92);
+    if(h>0) doc.rect(M+i*bwid+3, y+chartH-h, bwid-6, h, 'F');
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(110,106,90);
+    doc.text(mn[i], M+i*bwid+bwid/2, y+chartH+5, {align:'center'});
+    if(v>0){ doc.setTextColor(43,42,36); doc.text(fmt(v), M+i*bwid+bwid/2, y+chartH-h-1.5, {align:'center'}); }
+  });
+  y += chartH + 14;
+  // Tableau par fruit
+  doc.setFont('times','bold'); doc.setFontSize(12); doc.setTextColor(43,42,36); doc.text('Détail par fruit', M, y); y += 6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text('Fruit',M,y); doc.text('Plantes',M+75,y); doc.text('Récoltes',M+100,y); doc.text('Total (kg)',M+125,y); doc.text(`vs ${year-1}`,M+155,y);
+  doc.setDrawColor(150); doc.line(M,y+1.5,W-M,y+1.5); y += 7;
+  doc.setFont('helvetica','normal');
+  types.forEach(t=>{
+    if(y > 275){ doc.addPage(); y = 20; }
+    const r = D.perType[t], pr = prev.perType[t];
+    doc.text(t, M, y, {maxWidth:70}); doc.text(String(r.plants), M+75, y); doc.text(String(r.n), M+100, y); doc.text(fmt(r.kg), M+125, y);
+    doc.text(pr ? ((r.kg-pr.kg>=0?'+':'')+fmt(r.kg-pr.kg)) : '—', M+155, y);
+    y += 6;
+  });
+  // Meilleurs arbres avec photo
+  const top = D.perPlant.slice().sort((a,b)=> b.kg - a.kg).slice(0,6);
+  if(top.length){
+    doc.addPage(); y = 20;
+    doc.setFont('times','bold'); doc.setFontSize(14); doc.setTextColor(43,42,36); doc.text('Les plus généreux de la saison', M, y); y += 8;
+    top.forEach((r,i)=>{
+      if(y > 250){ doc.addPage(); y = 20; }
+      const photo = r.p.photo || ((r.p.photos||[])[0] && r.p.photos[0].image);
+      if(photo){ try{ doc.addImage(photo,'JPEG',M,y,32,24); }catch(e){} }
+      doc.setFont('times','bold'); doc.setFontSize(12); doc.setTextColor(43,42,36);
+      doc.text((i+1)+'. '+plantDisplayName(r.p)+(r.p.variety?' — '+r.p.variety:''), M+38, y+6);
+      doc.setFont('helvetica','normal'); doc.setFontSize(10);
+      doc.text(fmt(r.kg)+' kg en '+r.n+' récolte'+(r.n>1?'s':''), M+38, y+13);
+      if(r.p.location){ doc.setTextColor(110,106,90); doc.text(r.p.location, M+38, y+19); }
+      y += 32;
+    });
+  }
+  const blob = doc.output('blob');
+  const filename = 'bilan-saison-'+year+'.pdf';
+  if(downloadsCap){
+    try{ await downloadsCap.save({ filename, data: blob }); return; }
+    catch(e){ if(e && e.code==='declined') return; console.error(e); }
+  }
+  window.open(URL.createObjectURL(blob), '_blank');
+}
+document.getElementById('seasonReportBtn').onclick = generateSeasonReport;
+
+/* ---------- 4. QR code d'étiquette ---------- */
+function plantDeepLink(p){
+  return location.origin + location.pathname + '?g=' + encodeURIComponent(STATE.currentGardenId) + '&p=' + encodeURIComponent(p.id);
+}
+function makeQr(text){
+  try{
+    const qr = qrcode(0, 'M');
+    qr.addData(text); qr.make();
+    return qr;
+  }catch(e){ console.error('QR', e); return null; }
+}
+function drawQr(doc, qr, x, y, size){
+  const n = qr.getModuleCount(), cell = size / n;
+  doc.setFillColor(0,0,0);
+  for(let r=0; r<n; r++) for(let c=0; c<n; c++){
+    if(qr.isDark(r,c)) doc.rect(x + c*cell, y + r*cell, cell+0.02, cell+0.02, 'F');
+  }
+}
+(function handleDeepLink(){
+  const params = new URLSearchParams(location.search);
+  const pid = params.get('p'), gid = params.get('g');
+  if(!pid) return;
+  setTimeout(()=>{
+    if(gid && STATE.data[gid] && gid !== STATE.currentGardenId) switchGarden(gid);
+    const p = plants.find(x => x.id === pid);
+    if(p){ showView('view-fiches'); openDetail(pid); }
+    else showSnackbar("Cette fiche n'est pas sur cet appareil.");
+  }, 400);
+})();
+
+/* ---------- 9. Dictée vocale ---------- */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+function attachMic(el){
+  if(!SpeechRec || !el || el.dataset.mic) return;
+  el.dataset.mic = '1';
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'mic-btn'; b.title = 'Dicter'; b.setAttribute('aria-label','Dicter avec la voix');
+  b.textContent = '🎤';
+  let rec = null, listening = false;
+  b.onclick = ()=>{
+    if(listening && rec){ rec.stop(); return; }
+    try{
+      rec = new SpeechRec();
+      rec.lang = 'fr-FR'; rec.interimResults = false; rec.continuous = false;
+      rec.onresult = (ev)=>{
+        const txt = Array.prototype.map.call(ev.results, r => r[0].transcript).join(' ').trim();
+        if(txt){ el.value = (el.value ? el.value.replace(/\s+$/,'')+' ' : '') + txt; el.dispatchEvent(new Event('input',{bubbles:true})); }
+      };
+      rec.onend = ()=>{ listening = false; b.classList.remove('listening'); };
+      rec.onerror = ()=>{ listening = false; b.classList.remove('listening'); showSnackbar("Dictée impossible : autorise le micro et vérifie ta connexion."); };
+      rec.start(); listening = true; b.classList.add('listening');
+    }catch(e){ showSnackbar("Dictée indisponible sur ce navigateur."); }
+  };
+  el.parentNode.insertBefore(b, el.nextSibling);
+}
+['notes','customName','variety','fichesSearchInput'].forEach(id => attachMic(document.getElementById(id)));
 
 renderAll();
 loadWeather();
