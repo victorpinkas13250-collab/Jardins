@@ -160,6 +160,43 @@ h1 .leaf{color:var(--sun);font-style:italic;font-weight:500;}
 @keyframes micpulse{50%{opacity:.5}}
 .season-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;}
 .season-row select{padding:8px 10px;border:1px solid var(--line);border-radius:3px;font-family:inherit;background:var(--cream);color:var(--bark);}
+
+.floating-add-btn{transition:opacity .15s;}
+body:has(.modal-overlay:not(.hidden)) .floating-add-btn{display:none;}
+.water-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--line);}
+.water-row .btn{white-space:nowrap;padding:8px 12px;}
+.water-urgent{background:rgba(192,57,43,.08);}
+.water-panel h2{background:#2d6a8f;}
+.tour-panel h2{background:#3a7a4a;}
+.journal-panel h2{background:#6a5a3a;}
+.j-row{padding:8px 0;border-bottom:1px dashed var(--line);font-size:.92rem;line-height:1.45;}
+.j-head{display:flex;justify-content:space-between;align-items:center;gap:6px;}
+.j-photo{width:100%;max-width:240px;border-radius:4px;margin-top:6px;display:block;}
+.j-form{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;}
+.j-form select,.j-form input[type=text]{padding:8px;border:1px solid var(--line);border-radius:3px;font-family:inherit;background:var(--cream);color:var(--bark);}
+.j-form input[type=text]{flex:1;min-width:120px;}
+.j-recent{cursor:pointer;}
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.cmp-grid select{width:100%;margin-bottom:6px;padding:6px;font-family:inherit;}
+.cmp-grid img{width:100%;border-radius:4px;border:1px solid var(--line);}
+.tour-modal{max-width:520px;}
+.tour-bar-wrap{height:6px;background:var(--line);border-radius:3px;margin:8px 0 12px;overflow:hidden;}
+#tourBar{height:100%;background:var(--olive);width:0;transition:width .25s;}
+.tour-photo{width:100%;max-height:240px;object-fit:cover;border-radius:6px;margin-bottom:10px;}
+.tour-emoji{font-size:4rem;text-align:center;margin:10px 0;}
+.tour-name{font-size:1.25rem;font-weight:600;margin-bottom:4px;}
+.tour-lines{margin:8px 0;font-size:.95rem;line-height:1.6;}
+.tour-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.tour-big .btn{flex:1 1 45%;padding:16px 10px;font-size:1.05rem;}
+.tour-nav{display:flex;justify-content:space-between;margin-top:12px;}
+.tour-note textarea{width:100%;min-height:80px;padding:8px;border:1px solid var(--line);border-radius:3px;font-family:inherit;background:var(--cream);color:var(--bark);box-sizing:border-box;}
+.buy-row{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.92rem;}
+.buy-label{flex:1;}
+.buy-done .buy-label{text-decoration:line-through;opacity:.6;}
+.buy-form{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.buy-form input,.buy-form select{padding:8px;border:1px solid var(--line);border-radius:3px;font-family:inherit;background:var(--cream);color:var(--bark);}
+.buy-form #purchaseLabel{flex:1 1 140px;}
+.buy-form #purchasePrice{width:80px;}
 .weather-alert.rain{background:#e2e7d4;color:var(--olive-dark);border:1px solid var(--line);}
 .chart-panel{background:var(--cream);border:1px solid var(--line);border-radius:3px;padding:16px;}
 .chart-controls{margin-bottom:12px;}
@@ -651,11 +688,27 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
       <button class="export-reminder-dismiss" id="exportReminderDismiss" title="Fermer" aria-label="Fermer ce rappel">✕</button>
     </div>
 
+    <div class="today-panel tour-panel" id="tourPanel">
+      <h2 class="sans">🚶 Ma tournée du jardin</h2>
+      <div style="padding:14px 20px;">
+        <div class="mc-text" style="margin-bottom:10px;">Passe d'arbre en arbre : RAS, à surveiller, problème, arrosé. Gros boutons, une main suffit.</div>
+        <div class="season-row sans">
+          <select id="tourOrder" aria-label="Ordre de la tournée"><option value="map">Ordre sur la carte (nord → sud)</option><option value="loc">Par emplacement</option><option value="type">Par fruit</option></select>
+          <button class="btn btn-primary sans" id="openTourBtn">▶ Démarrer</button>
+        </div>
+      </div>
+    </div>
+
     <div class="today-panel weather-panel">
       <h2 class="sans">🌦️ Météo — <span id="weatherLocLabel">emplacement de la carte</span></h2>
       <div class="today-list" id="weatherBox">
         <div class="today-empty sans">Chargement de la météo...</div>
       </div>
+    </div>
+
+    <div class="today-panel water-panel" id="waterPanel" style="display:none;">
+      <h2 class="sans">💧 Arrosage du jour</h2>
+      <div id="waterBody"></div>
     </div>
 
     <div class="today-panel" id="todaySection">
@@ -676,6 +729,11 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     <div class="today-panel tasks-panel">
       <h2 class="sans">✅ Tâches d'entretien</h2>
       <div class="today-list" id="tasksPanelList"></div>
+    </div>
+
+    <div class="today-panel journal-panel" id="journalPanel" style="display:none;">
+      <h2 class="sans">📖 Journal récent</h2>
+      <div id="journalRecent"></div>
     </div>
 
     <div class="today-panel compat-panel" id="compatPanel" style="display:none;">
@@ -777,6 +835,18 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
 
     <div class="section-title">📈 Statistiques</div>
     <div id="statsPanel" class="stats-grid"></div>
+
+    <div class="section-title">🛒 Achats et budget</div>
+    <div class="chart-panel">
+      <div id="purchaseSummary" class="mc-text"></div>
+      <div id="purchaseList"></div>
+      <div class="buy-form sans">
+        <input type="text" id="purchaseLabel" placeholder="ex. Compost, filet anti-insectes…">
+        <input type="text" inputmode="decimal" id="purchasePrice" placeholder="Prix €">
+        <select id="purchasePlant" aria-label="Plante concernée"></select>
+        <button class="btn btn-primary sans" id="purchaseAddBtn">+ Ajouter</button>
+      </div>
+    </div>
 
     <div class="section-title">📄 Bilan de saison</div>
     <div class="chart-panel">
@@ -904,6 +974,25 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
   </div>
 </div>
 
+<!-- Tournée modal -->
+<div class="modal-overlay hidden" id="tourOverlay">
+  <div class="modal tour-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;"><h2 style="margin:0;">🚶 Tournée</h2><span id="tourProgress" class="sans"></span></div>
+    <div class="tour-bar-wrap"><div id="tourBar"></div></div>
+    <div id="tourBody"></div>
+    <div class="modal-actions"><button class="btn btn-secondary" id="closeTourBtn">Quitter la tournée</button></div>
+  </div>
+</div>
+
+<!-- Comparaison photos -->
+<div class="modal-overlay hidden" id="cmpOverlay">
+  <div class="modal">
+    <h2 id="cmpTitle">Comparer</h2>
+    <div id="cmpBody"></div>
+    <div class="modal-actions"><button class="btn btn-secondary" id="closeCmpBtn">Fermer</button></div>
+  </div>
+</div>
+
 <!-- Diagnostic modal -->
 <div class="modal-overlay hidden" id="diagOverlay">
   <div class="modal">
@@ -1022,6 +1111,11 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
       <div class="help-section">
         <h3>🔍 Je ne connais pas la plante</h3>
         <p>Dans « Nouvelle fiche », prends une photo (feuille ou fleur, de près, bien nette) puis touche « Identifier cette plante ». L'appli propose des noms avec un pourcentage de confiance : touche le bon et la fiche se remplit. Première fois : il faut coller une clé gratuite Pl@ntNet (⋯ Plus d'actions → 🔑 Clé d'identification).</p>
+      </div>
+
+      <div class="help-section">
+        <h3>🚶 Tournée et arrosage</h3>
+        <p>Sur l'accueil, « Ma tournée » te fait passer d'une plante à l'autre. « Arrosage du jour » te dit quoi arroser selon la pluie réellement tombée, la chaleur, l'âge et le type de plante : touche « Arrosé » une fois fait. Chaque fiche a un journal de bord, une estimation de récolte et un bouton de partage.</p>
       </div>
 
       <div class="help-section">
@@ -1798,7 +1892,8 @@ async function exportCurrentGarden(){
     exportedAt: new Date().toISOString(),
     gardenName: g ? g.name : 'Mon jardin',
     plants: plants,
-    grid: currentGrid()
+    grid: currentGrid(),
+    purchases: STATE.data[STATE.currentGardenId].purchases || []
   };
   const json = JSON.stringify(payload, null, 2);
   const filename = `jardin-${slugify(g ? g.name : 'export')}.json`;
@@ -1853,6 +1948,7 @@ function generateShareHTML(gardenName, plantsList){
         ${p.notes?`<tr><th>Notes</th><td>${escapeHtml(p.notes)}</td></tr>`:''}
       </table>
       <p style="margin-top:10px;"><a href="${buildLearnMoreUrl(p.type)}" target="_blank" rel="noopener">📖 Lire de vrais articles sur l'entretien du ${escapeHtml(p.type.toLowerCase())}</a></p>
+      ${(p.journal||[]).length ? '<div class="s-section-title">Journal de bord</div><ul class="s-log">' + p.journal.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<li>${fmtDate(new Date(e.date))} — ${escapeHtml(e.text || e.kind)}</li>`).join('') + '</ul>' : ''}
       ${tasksHTML?`<div class="s-section-title">Tâches</div>${tasksHTML}`:''}
       ${logHTML?`<div class="s-section-title">Journal des récoltes</div>${logHTML}`:''}
     </section>`;
@@ -1945,31 +2041,7 @@ async function exportCsv(){
 }
 document.getElementById('exportCsvBtn').onclick = exportCsv;
 
-function markExported(){
-  STATE.lastExportDate = new Date().toISOString().slice(0,10);
-  persist();
-  renderExportReminder();
-}
 
-function renderExportReminder(){
-  const banner = document.getElementById('exportReminderBanner');
-  if(STATE.exportReminderDismissedAt === today().toISOString().slice(0,10)){
-    banner.style.display = 'none';
-    return;
-  }
-  const last = STATE.lastExportDate;
-  const totalPlants = STATE.gardens.reduce((sum,g)=> sum + (STATE.data[g.id].plants||[]).length, 0);
-  if(totalPlants === 0){ banner.style.display = 'none'; return; }
-
-  let daysSince = last ? Math.round((today() - new Date(last)) / 86400000) : null;
-  const shouldShow = !last || daysSince >= 14;
-  if(!shouldShow){ banner.style.display = 'none'; return; }
-
-  document.getElementById('exportReminderText').textContent = last
-    ? `📤 Ça fait ${daysSince} jours que tu n'as pas exporté tes jardins. Pense à sauvegarder tes données.`
-    : `📤 Tu n'as encore jamais exporté tes jardins. Fais-le régulièrement pour ne rien perdre si tu changes de téléphone.`;
-  banner.style.display = 'flex';
-}
 
 function importGardenFromFile(file){
   const reader = new FileReader();
@@ -1992,7 +2064,8 @@ function importGardenFromFile(file){
     STATE.gardens.push({ id, name });
     STATE.data[id] = {
       plants: payload.plants || [],
-      grid: payload.grid || defaultGrid()
+      grid: payload.grid || defaultGrid(),
+      purchases: Array.isArray(payload.purchases) ? payload.purchases : []
     };
     if(!STATE.data[id].grid.bgImage) STATE.data[id].grid.bgImage = STATE.data[id].grid.bgImage || null;
     switchGarden(id);
@@ -2191,18 +2264,18 @@ async function loadWeather(){
   document.getElementById('weatherLocLabel').textContent = g0 ? g0.name : 'ton jardin';
 
   try{
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${g.center.lat}&longitude=${g.center.lng}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code,wind_gusts_10m_max&timezone=auto&forecast_days=6`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${g.center.lat}&longitude=${g.center.lng}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code,wind_gusts_10m_max&timezone=auto&forecast_days=6&past_days=7`;
     const res = await fetch(url);
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
     if(!data || !data.daily || !data.daily.time) throw new Error('Réponse météo invalide');
     try{ const wc = JSON.parse(localStorage.getItem('verger-weather-cache')||'{}'); wc[STATE.currentGardenId] = { t: Date.now(), data }; localStorage.setItem('verger-weather-cache', JSON.stringify(wc)); }catch(e2){}
-    renderWeather(data);
+    renderWeather(applyWeatherData(data));
   }catch(e){
     let cached = null;
     try{ const wc = JSON.parse(localStorage.getItem('verger-weather-cache')||'{}'); cached = wc[STATE.currentGardenId]; }catch(e2){}
     if(cached && cached.data && cached.data.daily){
-      renderWeather(cached.data);
+      renderWeather(applyWeatherData(cached.data));
       box.insertAdjacentHTML('afterbegin', '<div class="weather-alert rain">📴 Hors connexion : dernières prévisions connues (' + new Date(cached.t).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) + ').</div>');
       return;
     }
@@ -2222,8 +2295,7 @@ function renderWeather(data){
   if(rainSoon){
     alertsHTML += `<div class="weather-alert rain">🌧️ Pluie prévue dans les prochains jours — pas besoin d'arroser toi-même.</div>`;
   } else if(noRainNext3){
-    alertsHTML += `<div class="weather-alert rain">💧 Pas de pluie prévue les 3 prochains jours — une tâche "Arroser" a été ajoutée pour les fruits qui n'en ont pas déjà une.</div>`;
-    autoCreateWateringTasks();
+    alertsHTML += `<div class="weather-alert rain">💧 Pas de pluie prévue les 3 prochains jours — regarde « Arrosage du jour » juste en dessous.</div>`;
   }
 
   const stripHTML = d.time.map((t,i)=>{
@@ -2285,36 +2357,6 @@ document.getElementById('notifBtn').onclick = async ()=>{
   updateNotifBtn();
 };
 
-function checkAndNotify(){
-  if(!('Notification' in window) || Notification.permission!=='granted' || !STATE.notificationsEnabled) return;
-  const todayStr = today().toISOString().slice(0,10);
-  if(STATE.lastNotifiedDate === todayStr) return; // une seule fois par jour
-
-  const readyNow = [];
-  const dueTasks = [];
-  STATE.gardens.forEach(g=>{
-    (STATE.data[g.id].plants || []).forEach(p=>{
-      const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
-      const hs = harvestStatus(db.harvest[0], db.harvest[1]);
-      if(hs.status === 'now') readyNow.push(plantDisplayName(p));
-      (p.tasks||[]).forEach(t=>{
-        if(!t.done && t.dueDate && t.dueDate <= todayStr) dueTasks.push(t.label+' ('+plantDisplayName(p)+')');
-      });
-    });
-  });
-
-  if(readyNow.length===0 && dueTasks.length===0) return;
-
-  let body = '';
-  if(readyNow.length) body += `À récolter : ${readyNow.slice(0,4).join(', ')}${readyNow.length>4?'...':''}. `;
-  if(dueTasks.length) body += `Tâches en attente : ${dueTasks.slice(0,3).join(', ')}${dueTasks.length>3?'...':''}.`;
-
-  try{
-    new Notification('🍑 Le Carnet du Verger', { body, icon: 'icon-192.png' });
-    STATE.lastNotifiedDate = todayStr;
-    persist();
-  }catch(e){ console.error('Notification impossible', e); }
-}
 
 document.getElementById('importGardenBtn').onclick = ()=> document.getElementById('importGardenInput').click();
 document.getElementById('importGardenInput').onchange = (e)=>{
@@ -2395,7 +2437,6 @@ function renderAll(){
   renderParcelGrid();
   renderExportReminder();
   updateNotifBtn();
-  checkAndNotify();
   renderChartFilter();
   renderHarvestChart();
   renderStats();
@@ -2403,6 +2444,9 @@ function renderAll(){
   renderMonthPanel();
   renderCompatPanel();
   refreshSeasonYears();
+  renderWaterPanel();
+  renderRecentJournal();
+  renderPurchases();
 }
 
 function renderTasksPanel(){
@@ -3568,6 +3612,7 @@ document.getElementById('closeHelpBtn').onclick = ()=> document.getElementById('
 
 /* ---------------- Nouveautés / historique des versions ---------------- */
 const CHANGELOG = [
+  { v:'v2.9.0', items:['💧 Arrosage du jour : calculé d\'après la pluie réelle, la chaleur, l\'âge et le type de chaque plante','🚶 Tournée du jardin : RAS / à surveiller / problème / arrosé, plante par plante, gros boutons','📖 Journal de bord daté avec photos (floraison, traitement, taille…) et comparaison avec l\'an dernier','↔ Comparaison de photos avant/après et défilement dans le temps','📈 Estimation de la récolte à venir d\'après tes années précédentes','🛒 Achats et budget, avec coût au kg récolté','🔗 Partager une fiche (fichier à envoyer par WhatsApp, mail…)','🔔 Rappels : début de la période de récolte, gel, arrosage urgent','📤 Rappel de sauvegarde intelligent (ce qui n\'est pas encore sauvegardé)'] },
   { v:'v2.8.0', items:['🌦️ Alertes météo liées à TES plantes : gel, canicule, vent fort (mistral), grêle','🗓️ « Que faire ce mois-ci ? » : récoltes, tailles et conseils du mois pour le sud','🐝 Compatibilités : pollinisation (kiwi mâle/femelle…) et mauvais voisinages','🍯 Idées de transformation de la récolte (confiture, séchage, congélation)','🩺 Diagnostic : « ma plante a un problème »','📄 Bilan de saison en PDF','📱 QR code sur les étiquettes : scanne un arbre pour ouvrir sa fiche','🎤 Dictée vocale dans les champs texte','📴 Appli utilisable hors connexion (météo gardée en mémoire)'] },
   { v:'v2.7.0', items:['🔍 Identifier une plante inconnue depuis une photo, sans quitter l\'appli (service Pl@ntNet)','Touche la bonne suggestion : la fiche se remplit toute seule','Réglage de la clé gratuite dans ⋯ Plus d\'actions → 🔑 Clé d\'identification'] },
   { v:'v2.6.0', items:['Vraies pages séparées façon appli native : 🏠 Accueil, 🗺️ Carte, 🍑 Fiches, 📊 Stats','Barre d\'onglets fixée en bas, accessible au pouce','Un seul écran affiché à la fois — fini le long défilement'] },
@@ -3703,12 +3748,19 @@ function openDetail(id){
     </div>
     <div class="tip-box sans"><b>Comment savoir qu'il est prêt</b>${db.tip}</div>
     <a class="learn-more-link sans" href="${buildLearnMoreUrl(p.type)}" target="_blank" rel="noopener">📖 Lire de vrais articles sur l'entretien du ${escapeHtml(p.type.toLowerCase())}</a>
+    ${estimateHTML(p)}
+    <div class="detail-section">
+      <div class="detail-section-title sans">📖 Journal de bord</div>
+      <div id="journalBox">${buildJournalHTML(p)}</div>
+      ${journalFormHTML()}
+    </div>
     <div class="detail-section">
       <div class="detail-section-title sans">🍯 Que faire de la récolte ?</div>
       ${transformHTML(p)}
     </div>
     <div class="detail-section">
       <button class="btn btn-secondary sans" id="detailDiagBtn">🩺 Un problème avec cette plante ?</button>
+      <button class="btn btn-secondary sans" id="shareOneBtn">🔗 Partager cette fiche</button>
     </div>
     <div class="detail-section">
       <div class="detail-section-title sans">✅ Tâches d'entretien</div>
@@ -3738,6 +3790,7 @@ function openDetail(id){
       <div id="galleryBox" class="gallery-grid">${buildGalleryHTML(p)}</div>
       <input type="file" id="galleryPhotoInput" accept="image/*" capture="environment" style="display:none;">
       <button class="btn btn-secondary sans" id="addGalleryPhotoBtn" style="margin-top:8px;">+ Ajouter une photo</button>
+      <button class="btn btn-secondary sans" id="cmpBtn" style="margin-top:8px;">↔ Comparer / défiler</button>
     </div>
   `;
   detailOverlay.classList.remove('hidden');
@@ -3745,6 +3798,9 @@ function openDetail(id){
 
   document.getElementById('addTaskBtn').onclick = ()=> addTask(p.id);
   document.getElementById('detailDiagBtn').onclick = ()=> openDiag(p.id);
+  document.getElementById('shareOneBtn').onclick = ()=> sharePlantFile(p);
+  document.getElementById('cmpBtn').onclick = ()=> openCompare(p.id);
+  bindJournal(p);
   attachMic(document.getElementById('newTaskLabel'));
   document.getElementById('addHarvestBtn').onclick = ()=> addHarvestEntry(p.id);
   document.querySelectorAll('.task-check').forEach(cb => cb.onchange = ()=> toggleTask(p.id, cb.dataset.taskId));
@@ -4129,7 +4185,7 @@ document.getElementById('combinedPdfBtn').onclick = generateCombinedPdf;
 
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v2.8.0';
+const APP_VERSION = 'v2.9.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
@@ -4375,7 +4431,7 @@ const TRANSFORM = {
 function transformHTML(p){
   const db = FRUIT_DB[p.type];
   if(!db) return '';
-  const grp = db.cat === 'herb' ? 'herbe' : (TRANSFORM_GROUP[p.type] || 'fruit');
+  const grp = db.cat === 'aromatique' ? 'herbe' : (TRANSFORM_GROUP[p.type] || 'fruit');
   const tips = TRANSFORM[grp] || TRANSFORM.fruit;
   const y = today().getFullYear();
   const kg = (p.harvestLog||[]).filter(h => h.date && new Date(h.date).getFullYear() === y).reduce((s,h)=> s + (parseFloat(h.qty)||0), 0);
@@ -4547,7 +4603,10 @@ async function generateSeasonReport(){
   } else {
     doc.text(`Pas de données pour ${year-1} : cette saison sert de référence.`, M, y);
   }
-  y += 10;
+  y += 6;
+  const spentYear = purchaseList().filter(x => x.bought && new Date((x.date||ymd())+'T12:00:00').getFullYear() === year).reduce((s,x)=> s + (parseFloat(x.price)||0), 0);
+  if(spentYear > 0){ doc.text(`Achats de l'année : ${fmt(spentYear)} € — soit environ ${fmt(spentYear/D.total)} € par kg récolté.`, M, y); y += 6; }
+  y += 4;
   // Histogramme mensuel
   doc.setFont('times','bold'); doc.setFontSize(12); doc.text('Récoltes mois par mois (kg)', M, y); y += 4;
   const chartH = 40, chartW = W-2*M, maxV = Math.max.apply(null, D.perMonth.concat([1]));
@@ -4659,6 +4718,611 @@ function attachMic(el){
   el.parentNode.insertBefore(b, el.nextSibling);
 }
 ['notes','customName','variety','fichesSearchInput'].forEach(id => attachMic(document.getElementById(id)));
+
+
+/* =====================================================================
+   v2.9.0 — Arrosage intelligent, journal de bord, tournée du jardin,
+   comparaison photos, estimation de récolte, achats/budget, partage de fiche,
+   rappels de récolte, rappel de sauvegarde intelligent
+   ===================================================================== */
+
+function ymd(d){
+  d = d || new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function daysBetweenStr(a, b){ // b - a en jours (chaînes AAAA-MM-JJ)
+  return Math.round((new Date(b+'T12:00:00') - new Date(a+'T12:00:00'))/86400000);
+}
+function fmtShort(s){
+  const d = new Date(s+'T12:00:00');
+  return isNaN(d) ? s : d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();
+}
+function daysAgoLabel(s){
+  if(!s) return 'jamais';
+  const n = daysBetweenStr(s, ymd());
+  if(n <= 0) return "aujourd'hui";
+  if(n === 1) return 'hier';
+  return 'il y a '+n+' jours';
+}
+
+/* ---------- Météo : historique de pluie + contexte ---------- */
+let WEATHER_CTX = null;
+function rainLogRead(){ try{ return JSON.parse(localStorage.getItem('verger-rainlog')||'{}'); }catch(e){ return {}; } }
+function rainLogWrite(o){ try{ localStorage.setItem('verger-rainlog', JSON.stringify(o)); }catch(e){} }
+
+// Sépare passé / prévisions, met à jour l'historique de pluie et le contexte, renvoie les données "à partir d'aujourd'hui"
+function applyWeatherData(raw){
+  const d = raw.daily;
+  const todayStr = ymd();
+  let idx = d.time.findIndex(t => t >= todayStr);
+  if(idx < 0){ WEATHER_CTX = null; return raw; }
+  // historique cumulé
+  const log = rainLogRead();
+  const gid = STATE.currentGardenId;
+  if(!log[gid]) log[gid] = {};
+  d.time.forEach((t,i)=>{ if(t <= todayStr && d.precipitation_sum[i] !== null && d.precipitation_sum[i] !== undefined) log[gid][t] = d.precipitation_sum[i]; });
+  // on ne garde que ~120 jours
+  Object.keys(log[gid]).forEach(t => { if(daysBetweenStr(t, todayStr) > 120) delete log[gid][t]; });
+  rainLogWrite(log);
+  const cut = {};
+  Object.keys(d).forEach(k => { cut[k] = Array.isArray(d[k]) ? d[k].slice(idx) : d[k]; });
+  const tmax = cut.temperature_2m_max || [];
+  WEATHER_CTX = {
+    rainNext2: (cut.precipitation_sum||[]).slice(0,3).reduce((s,v)=> s + (v||0), 0), // aujourd'hui + 2 jours
+    tAvg: tmax.slice(0,3).reduce((s,v)=>s+v,0) / Math.max(1, tmax.slice(0,3).length),
+    tminToday: (cut.temperature_2m_min||[])[0],
+    fresh: true
+  };
+  return { daily: cut };
+}
+
+/* ---------- 1. Arrosage du jour ---------- */
+const WATER_SOBRE = ['Olive','Figue','Grenade','Amande','Jujube','Pistache','Raisin de table','Raisin de cuve','Romarin','Thym','Sauge','Origan','Marjolaine','Sarriette','Laurier (laurier-sauce)','Arbouse','Goji','Kaki'];
+const WATER_GOURMAND = ['Citron','Orange','Mandarine','Pomelo','Cédrat','Kumquat','Yuzu','Combava','Citron caviar','Kiwi','Kiwaï','Framboise','Fraise','Myrtille','Airelle','Groseille','Cassis','Mûre','Melon','Pastèque','Tomate','Physalis','Basilic','Menthe','Persil','Ciboulette','Coriandre','Aneth','Estragon','Verveine citronnelle','Fruit de la passion (grenadille)','Feijoa'];
+const WATER_SMALL = ['Framboise','Fraise','Myrtille','Airelle','Groseille','Cassis','Mûre','Melon','Pastèque','Tomate','Physalis','Goji'];
+
+function waterClass(p){
+  if(WATER_SOBRE.indexOf(p.type) !== -1) return 'sobre';
+  if(WATER_GOURMAND.indexOf(p.type) !== -1) return 'gourmand';
+  return 'moyen';
+}
+function lastWaterEventDate(p){
+  const todayStr = ymd();
+  let best = p.lastWatered || null;
+  const log = rainLogRead()[STATE.currentGardenId] || {};
+  Object.keys(log).forEach(t => { if(log[t] >= 8 && (!best || t > best)) best = t; });
+  return best; // peut être null
+}
+function earliestKnownDate(){
+  const log = rainLogRead()[STATE.currentGardenId] || {};
+  const ks = Object.keys(log).sort();
+  return ks.length ? ks[0] : null;
+}
+function computeWatering(){
+  const now = today();
+  const month = now.getMonth(); // 0 = janvier
+  const out = { due: [], postponed: [], note: '', winter: false };
+  const ctx = WEATHER_CTX;
+  if(month === 11 || month === 0 || month === 1 || (ctx && ctx.tAvg < 10)){ out.winter = true; return out; }
+  if(ctx && ctx.rainNext2 >= 8){ out.postponed = plants.slice(); out.note = 'Pluie annoncée ('+Math.round(ctx.rainNext2)+' mm dans les 3 jours) : inutile d\'arroser maintenant.'; return out; }
+  const tAvg = ctx ? ctx.tAvg : 25;
+  const tf = tAvg >= 33 ? 0.6 : tAvg >= 28 ? 0.8 : tAvg >= 20 ? 1 : tAvg >= 12 ? 1.8 : 3;
+  const base = { sobre: 21, moyen: 10, gourmand: 5 };
+  const earliest = earliestKnownDate();
+  const todayStr = ymd();
+  plants.forEach(p => {
+    const cls = waterClass(p);
+    const age = plantAgeYears(p);
+    const af = age === null ? 1 : age < 1 ? 0.5 : age < 2 ? 0.7 : 1;
+    let interval = Math.max(2, Math.round(base[cls] * tf * af));
+    if(month === 2 || month === 10) interval = interval * 2; // mars / novembre
+    const last = lastWaterEventDate(p);
+    let since, lowerBound = false;
+    if(last){ since = daysBetweenStr(last, todayStr); }
+    else if(earliest){ since = daysBetweenStr(earliest, todayStr); lowerBound = true; }
+    else { since = 0; }
+    if(since >= interval){
+      out.due.push({ p, cls, interval, since, lowerBound, urgent: since >= interval*1.5, young: age !== null && age < 2 });
+    }
+  });
+  if(!ctx) out.note = "Météo indisponible : j'estime sans connaître la pluie récente.";
+  out.due.sort((a,b)=> (b.urgent - a.urgent) || (b.since/b.interval - a.since/a.interval));
+  return out;
+}
+function litersHint(d){
+  const db = FRUIT_DB[d.p.type] || {};
+  if(db.cat === 'aromatique' || WATER_SMALL.indexOf(d.p.type) !== -1) return '1 à 3 L par pied';
+  return d.young ? '10 à 15 L, lentement' : '20 à 30 L, lentement au pied';
+}
+function renderWaterPanel(){
+  const box = document.getElementById('waterBody');
+  if(!box) return;
+  const res = computeWatering();
+  const panel = document.getElementById('waterPanel');
+  if(!plants.length){ panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  let h = '';
+  if(res.winter){
+    h = '<div class="mc-text mc-none" style="padding:12px 20px;">❄️ Saison fraîche : pas d\'arrosage nécessaire (sauf plantes en pot abritées).</div>';
+  } else if(res.postponed.length){
+    h = '<div class="mc-text" style="padding:12px 20px;">🌧️ '+escapeHtml(res.note)+'</div>';
+  } else if(!res.due.length){
+    h = '<div class="mc-text" style="padding:12px 20px;">✅ Rien à arroser aujourd\'hui : la pluie récente ou ton dernier arrosage suffit encore.'+(res.note?'<br><span class="mc-none">'+escapeHtml(res.note)+'</span>':'')+'</div>';
+  } else {
+    h = res.due.map(d => `<div class="water-row ${d.urgent?'water-urgent':''}">
+      <div><b>${FRUIT_DB[d.p.type] ? FRUIT_DB[d.p.type].emoji : ''} ${escapeHtml(plantDisplayName(d.p))}</b>
+        <div class="mc-none">${d.urgent?'🔴 ':''}Pas d'eau (pluie ≥ 8 mm ou arrosage) depuis ${d.lowerBound?'au moins ':''}${d.since} j · seuil ${d.interval} j · ${litersHint(d)}</div></div>
+      <button class="btn btn-secondary sans water-done" data-id="${d.p.id}">💧 Arrosé</button></div>`).join('')
+      + `<div style="padding:10px 20px;"><button class="btn btn-primary sans" id="waterAllBtn">💧 Tout marquer arrosé</button>`
+      + (res.note ? '<div class="mc-none" style="margin-top:6px;">'+escapeHtml(res.note)+'</div>' : '') + `</div>`;
+  }
+  box.innerHTML = h;
+  box.querySelectorAll('.water-done').forEach(b => b.onclick = ()=>{ markWatered([b.dataset.id]); });
+  const all = document.getElementById('waterAllBtn');
+  if(all) all.onclick = ()=> markWatered(res.due.map(d => d.p.id));
+}
+function markWatered(ids){
+  const t = ymd();
+  ids.forEach(id => { const p = getPlantById(id); if(p) p.lastWatered = t; });
+  persist();
+  renderWaterPanel();
+  showSnackbar(ids.length > 1 ? ids.length+' plantes marquées arrosées 💧' : 'Arrosage noté 💧');
+}
+
+/* ---------- 2. Journal de bord ---------- */
+const JOURNAL_KINDS = [
+  {k:'floraison', i:'🌸', l:'Floraison'},
+  {k:'fruits', i:'🍏', l:'Fruits formés'},
+  {k:'taille', i:'✂️', l:'Taille faite'},
+  {k:'traitement', i:'🧴', l:'Traitement'},
+  {k:'protection', i:'🥶', l:'Protection gel/chaleur'},
+  {k:'observation', i:'👀', l:'À surveiller'},
+  {k:'probleme', i:'⚠️', l:'Problème'},
+  {k:'note', i:'📝', l:'Note'}
+];
+function journalKind(k){ return JOURNAL_KINDS.find(x => x.k === k) || JOURNAL_KINDS[JOURNAL_KINDS.length-1]; }
+function addJournalEntry(plantId, kind, text, photo, ratio, date){
+  const p = getPlantById(plantId); if(!p) return null;
+  if(!p.journal) p.journal = [];
+  const entry = { id: makeId('j'), date: date || ymd(), kind, text: (text||'').trim() };
+  if(photo){
+    if(!p.photos) p.photos = [];
+    const ph = { id: makeId('ph'), image: photo, ratio: ratio || 1.33, date: entry.date };
+    p.photos.push(ph);
+    entry.photoId = ph.id;
+  }
+  p.journal.push(entry);
+  persist();
+  return entry;
+}
+function journalCompareLast(p, e){
+  if(e.kind !== 'floraison' && e.kind !== 'fruits' && e.kind !== 'taille') return '';
+  const y = new Date(e.date+'T12:00:00').getFullYear();
+  const prev = (p.journal||[]).filter(x => x.kind === e.kind && new Date(x.date+'T12:00:00').getFullYear() === y-1).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  if(!prev) return '';
+  const cur = new Date(e.date+'T12:00:00'), pv = new Date(prev.date+'T12:00:00');
+  const pvSame = new Date(pv.getFullYear()+1, pv.getMonth(), pv.getDate(), 12);
+  const diff = Math.round((cur - pvSame)/86400000);
+  const txt = diff === 0 ? 'à la même date' : (Math.abs(diff)+' j '+(diff<0?"plus tôt":"plus tard")+' que l\'an dernier');
+  return `<div class="mc-none">An dernier : ${fmtShort(prev.date)} — ${txt}</div>`;
+}
+function buildJournalHTML(p){
+  const list = (p.journal||[]).slice().sort((a,b)=> b.date.localeCompare(a.date));
+  if(!list.length) return '<div class="empty-hint sans">Aucun événement noté pour l\'instant.</div>';
+  return list.map(e => {
+    const k = journalKind(e.kind);
+    const ph = e.photoId && (p.photos||[]).find(x => x.id === e.photoId);
+    return `<div class="j-row">
+      <div class="j-head sans">${k.i} <b>${escapeHtml(k.l)}</b> · ${fmtShort(e.date)}
+        <button class="task-del-btn j-del" data-id="${e.id}" title="Supprimer" aria-label="Supprimer cet événement">✕</button></div>
+      ${e.text ? '<div>'+escapeHtml(e.text)+'</div>' : ''}
+      ${ph ? `<img class="j-photo" src="${ph.image}" alt="">` : ''}
+      ${journalCompareLast(p, e)}
+    </div>`;
+  }).join('');
+}
+function journalFormHTML(){
+  return `<div class="j-form">
+    <select id="jKind" aria-label="Type d'événement">${JOURNAL_KINDS.map(k => `<option value="${k.k}">${k.i} ${k.l}</option>`).join('')}</select>
+    <input type="text" id="jText" placeholder="Détail (facultatif)">
+    <input type="file" id="jPhoto" accept="image/*" capture="environment" style="display:none;">
+    <button type="button" class="btn btn-secondary sans" id="jPhotoBtn" title="Ajouter une photo">📷</button>
+    <button type="button" class="btn btn-primary sans" id="jAddBtn">+ Noter</button>
+    <span id="jPhotoInfo" class="mc-none"></span>
+  </div>`;
+}
+function bindJournal(p){
+  let pendPhoto = null, pendRatio = null;
+  attachMic(document.getElementById('jText'));
+  document.getElementById('jPhotoBtn').onclick = ()=> document.getElementById('jPhoto').click();
+  document.getElementById('jPhoto').onchange = (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    readAndCompressImage(f, 700, (d, r)=>{ pendPhoto = d; pendRatio = r; document.getElementById('jPhotoInfo').textContent = '📷 photo prête'; });
+  };
+  document.getElementById('jAddBtn').onclick = ()=>{
+    const kind = document.getElementById('jKind').value;
+    const text = document.getElementById('jText').value;
+    addJournalEntry(p.id, kind, text, pendPhoto, pendRatio);
+    renderRecentJournal();
+    openDetail(p.id);
+  };
+  document.querySelectorAll('.j-del').forEach(b => b.onclick = ()=>{
+    p.journal = (p.journal||[]).filter(x => x.id !== b.dataset.id);
+    persist(); renderRecentJournal(); openDetail(p.id);
+  });
+}
+function renderRecentJournal(){
+  const panel = document.getElementById('journalPanel');
+  if(!panel) return;
+  const all = [];
+  plants.forEach(p => (p.journal||[]).forEach(e => all.push({p, e})));
+  if(!all.length){ panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  all.sort((a,b)=> b.e.date.localeCompare(a.e.date));
+  document.getElementById('journalRecent').innerHTML = all.slice(0,6).map(x => {
+    const k = journalKind(x.e.kind);
+    return `<div class="mc-alert j-recent" data-id="${x.p.id}"><span>${k.i}</span><span><b>${escapeHtml(plantDisplayName(x.p))}</b> · ${fmtShort(x.e.date)}<br>${escapeHtml(x.e.text || k.l)}</span></div>`;
+  }).join('');
+  document.querySelectorAll('.j-recent').forEach(r => r.onclick = ()=> openDetail(r.dataset.id));
+}
+
+/* ---------- 3. Comparaison de photos ---------- */
+let cmpList = [];
+function openCompare(plantId){
+  const p = getPlantById(plantId); if(!p) return;
+  cmpList = [];
+  if(p.photo) cmpList.push({ image: p.photo, date: p.plantedDate || '', label: 'Photo principale' });
+  (p.photos||[]).forEach(ph => cmpList.push({ image: ph.image, date: ph.date, label: fmtShort(ph.date) }));
+  cmpList.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+  document.getElementById('cmpTitle').textContent = '↔ ' + plantDisplayName(p);
+  const body = document.getElementById('cmpBody');
+  if(cmpList.length < 2){
+    body.innerHTML = '<div class="empty-hint sans">Il faut au moins 2 photos pour comparer. Ajoute des photos à la galerie au fil des saisons.</div>';
+  } else {
+    const opts = cmpList.map((c,i)=> `<option value="${i}">${escapeHtml(c.label)}</option>`).join('');
+    body.innerHTML = `
+      <div class="cmp-grid">
+        <div><select id="cmpA" aria-label="Photo A">${opts}</select><img id="cmpImgA" alt=""></div>
+        <div><select id="cmpB" aria-label="Photo B">${opts}</select><img id="cmpImgB" alt=""></div>
+      </div>
+      <button class="btn btn-secondary sans" id="cmpLastYear" style="margin:8px 0;">📅 Même période, an dernier</button>
+      <div class="sans mc-none">Ou fais défiler le temps :</div>
+      <input type="range" id="cmpSlider" min="0" max="${cmpList.length-1}" value="0" style="width:100%;">
+      <div id="cmpSliderLabel" class="sans" style="text-align:center;"></div>`;
+    const A = document.getElementById('cmpA'), B = document.getElementById('cmpB');
+    const upd = ()=>{ document.getElementById('cmpImgA').src = cmpList[A.value].image; document.getElementById('cmpImgB').src = cmpList[B.value].image; };
+    A.value = 0; B.value = cmpList.length-1; upd();
+    A.onchange = B.onchange = upd;
+    document.getElementById('cmpLastYear').onclick = ()=>{
+      const target = new Date(cmpList[B.value].date+'T12:00:00'); target.setFullYear(target.getFullYear()-1);
+      let bi = 0, bd = Infinity;
+      cmpList.forEach((c,i)=>{ if(!c.date) return; const d = Math.abs(new Date(c.date+'T12:00:00') - target); if(d < bd){ bd = d; bi = i; } });
+      A.value = bi; upd();
+      if(String(bi) === String(B.value)) showSnackbar("Pas de photo de l'an dernier à cette période.");
+    };
+    const S = document.getElementById('cmpSlider');
+    S.oninput = ()=>{ const c = cmpList[S.value]; document.getElementById('cmpImgB').src = c.image; B.value = S.value; document.getElementById('cmpSliderLabel').textContent = c.label; };
+  }
+  document.getElementById('cmpOverlay').classList.remove('hidden');
+}
+document.getElementById('closeCmpBtn').onclick = ()=> document.getElementById('cmpOverlay').classList.add('hidden');
+document.getElementById('cmpOverlay').onclick = (e)=>{ if(e.target.id === 'cmpOverlay') e.target.classList.add('hidden'); };
+
+/* ---------- 7. Estimation de la récolte ---------- */
+function yearTotals(p){
+  const t = {};
+  (p.harvestLog||[]).forEach(h => { if(!h.date) return; const y = new Date(h.date+'T12:00:00').getFullYear(); t[y] = (t[y]||0) + (parseFloat(h.qty)||0); });
+  return t;
+}
+function estimateHTML(p){
+  const t = yearTotals(p);
+  const cy = today().getFullYear();
+  const prev = Object.keys(t).map(Number).filter(y => y < cy && t[y] > 0).sort();
+  const fmt = n => n.toLocaleString('fr-FR',{maximumFractionDigits:1});
+  const cur = t[cy] || 0;
+  if(!prev.length){
+    return `<div class="detail-section"><div class="detail-section-title sans">📈 Estimation de récolte</div>
+      <div class="mc-text mc-none">Pas encore d'historique. Note tes récoltes cette année : l'an prochain, je te dirai combien en attendre.${cur>0?' (Déjà '+fmt(cur)+' kg cette année.)':''}</div></div>`;
+  }
+  const avg = prev.reduce((s,y)=> s + t[y], 0) / prev.length;
+  let line = `Années précédentes : ${prev.map(y => y+' : '+fmt(t[y])+' kg').join(' · ')}.<br>Moyenne : <b>${fmt(avg)} kg</b> par an.`;
+  if(prev.length >= 2){
+    const a = t[prev[prev.length-1]], b = t[prev[prev.length-2]];
+    const pct = Math.round((a-b)/b*100);
+    line += `<br>Tendance : ${pct>=0?'+':''}${pct} % entre ${prev[prev.length-2]} et ${prev[prev.length-1]}.`;
+  }
+  const rest = avg - cur;
+  line += `<br>Cette année : <b>${fmt(cur)} kg</b> — ` + (rest > 0.2 ? `il reste environ <b>${fmt(rest)} kg</b> à attendre pour une année moyenne.` : `tu as déjà atteint ta moyenne. 🎉`);
+  const age = plantAgeYears(p);
+  const caveat = (age !== null && age < 4) ? ' Arbre encore jeune : la production devrait augmenter.' : '';
+  return `<div class="detail-section"><div class="detail-section-title sans">📈 Estimation de récolte</div>
+    <div class="mc-text">${line}</div>
+    <div class="mc-none">Simple moyenne de tes récoltes passées, sans tenir compte du climat de l'année.${caveat}</div></div>`;
+}
+
+/* ---------- 5. Achats et budget ---------- */
+function purchaseList(){
+  const d = STATE.data[STATE.currentGardenId];
+  if(!Array.isArray(d.purchases)) d.purchases = [];
+  return d.purchases;
+}
+function renderPurchases(){
+  const box = document.getElementById('purchaseList');
+  if(!box) return;
+  const list = purchaseList();
+  const fmt = n => n.toLocaleString('fr-FR',{minimumFractionDigits:2, maximumFractionDigits:2});
+  const sel = document.getElementById('purchasePlant');
+  const curSel = sel.value;
+  sel.innerHTML = '<option value="">Pour tout le jardin</option>' + plants.map(p => `<option value="${p.id}">${escapeHtml(plantDisplayName(p))}</option>`).join('');
+  sel.value = curSel;
+  const sorted = list.slice().sort((a,b)=> (a.bought - b.bought) || (b.date||'').localeCompare(a.date||''));
+  box.innerHTML = sorted.length ? sorted.map(x => {
+    const pl = x.plantId ? getPlantById(x.plantId) : null;
+    return `<div class="buy-row ${x.bought?'buy-done':''}">
+      <input type="checkbox" class="buy-check" data-id="${x.id}" ${x.bought?'checked':''} aria-label="Acheté">
+      <span class="buy-label">${escapeHtml(x.label)}${pl ? ' <span class="mc-none">· '+escapeHtml(plantDisplayName(pl))+'</span>' : ''}</span>
+      <span class="sans">${x.price !== '' && x.price !== null && x.price !== undefined ? fmt(parseFloat(x.price)||0)+' €' : '—'}</span>
+      <button class="task-del-btn buy-del" data-id="${x.id}" aria-label="Supprimer">✕</button></div>`;
+  }).join('') : '<div class="empty-hint sans">Rien dans ta liste. Ajoute compost, filet, cuivre, nouveaux plants…</div>';
+  const cy = today().getFullYear();
+  const spent = list.filter(x => x.bought && new Date((x.date||ymd())+'T12:00:00').getFullYear() === cy).reduce((s,x)=> s + (parseFloat(x.price)||0), 0);
+  const todo = list.filter(x => !x.bought);
+  const todoSum = todo.reduce((s,x)=> s + (parseFloat(x.price)||0), 0);
+  const kg = seasonData(cy).total;
+  let sum = `<b>${todo.length}</b> à acheter` + (todoSum ? ' (≈ '+fmt(todoSum)+' €)' : '') + ` · Dépensé en ${cy} : <b>${fmt(spent)} €</b>`;
+  if(spent > 0 && kg > 0) sum += ` · Soit environ <b>${fmt(spent/kg)} €</b> par kg récolté (${kg.toLocaleString('fr-FR',{maximumFractionDigits:1})} kg).`;
+  document.getElementById('purchaseSummary').innerHTML = sum;
+  box.querySelectorAll('.buy-check').forEach(c => c.onchange = ()=>{
+    const it = purchaseList().find(x => x.id === c.dataset.id); if(!it) return;
+    it.bought = c.checked; if(c.checked) it.date = ymd();
+    persist(); renderPurchases();
+  });
+  box.querySelectorAll('.buy-del').forEach(b => b.onclick = ()=>{
+    const d = STATE.data[STATE.currentGardenId]; d.purchases = purchaseList().filter(x => x.id !== b.dataset.id);
+    persist(); renderPurchases();
+  });
+}
+document.getElementById('purchaseAddBtn').onclick = ()=>{
+  const label = document.getElementById('purchaseLabel').value.trim();
+  if(!label){ showSnackbar("Écris ce qu'il faut acheter."); return; }
+  const priceRaw = document.getElementById('purchasePrice').value.replace(',', '.');
+  if(priceRaw !== '' && (isNaN(parseFloat(priceRaw)) || parseFloat(priceRaw) < 0)){ alert('Le prix doit être un nombre positif.'); return; }
+  purchaseList().push({ id: makeId('b'), label, price: priceRaw, plantId: document.getElementById('purchasePlant').value || null, bought: false, date: ymd() });
+  document.getElementById('purchaseLabel').value = ''; document.getElementById('purchasePrice').value = '';
+  persist(); renderPurchases();
+};
+attachMic(document.getElementById('purchaseLabel'));
+
+/* ---------- 8. Partage d'une fiche ---------- */
+async function sharePlantFile(p){
+  const name = plantDisplayName(p);
+  const html = generateShareHTML(name, [p]);
+  const filename = 'fiche-' + slugify(name) + '.html';
+  try{
+    const file = new File([html], filename, { type:'text/html' });
+    if(navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file], title: name });
+      return;
+    }
+  }catch(e){ if(e && e.name === 'AbortError') return; console.error(e); }
+  if(downloadsCap){
+    try{ await downloadsCap.save({ filename, data: html }); return; }
+    catch(e){ if(e && e.code === 'declined') return; console.error(e); }
+  }
+  window.open(URL.createObjectURL(new Blob([html], {type:'text/html'})), '_blank');
+}
+
+/* ---------- 6. Tournée du jardin ---------- */
+let tourList = [], tourIdx = 0, tourResults = {}, tourPending = null, tourPhoto = null, tourRatio = null;
+function tourOrder(mode){
+  const g = currentGrid();
+  const pos = {};
+  (g.markers||[]).forEach(m => { pos[m.plantId] = m; });
+  const arr = plants.slice();
+  if(mode === 'map'){
+    arr.sort((a,b)=>{
+      const ma = pos[a.id], mb = pos[b.id];
+      if(ma && mb) return (Math.round(mb.lat*2000) - Math.round(ma.lat*2000)) || (ma.lng - mb.lng); // nord → sud par bandes
+      if(ma) return -1; if(mb) return 1;
+      return (a.location||'').localeCompare(b.location||'','fr') || a.type.localeCompare(b.type,'fr');
+    });
+  } else if(mode === 'loc'){
+    arr.sort((a,b)=> (a.location||'zzz').localeCompare(b.location||'zzz','fr') || a.type.localeCompare(b.type,'fr'));
+  } else {
+    arr.sort((a,b)=> a.type.localeCompare(b.type,'fr') || plantDisplayName(a).localeCompare(plantDisplayName(b),'fr'));
+  }
+  return arr;
+}
+function openTour(){
+  if(!plants.length){ showSnackbar("Ajoute d'abord une fiche."); return; }
+  tourResults = {}; tourIdx = 0; tourPending = null;
+  tourList = tourOrder(document.getElementById('tourOrder').value || 'map');
+  document.getElementById('tourOverlay').classList.remove('hidden');
+  renderTourStep();
+}
+function tourStatusLines(p){
+  const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+  const hs = harvestStatus(db.harvest[0], db.harvest[1]);
+  const lines = [];
+  if(hs.status === 'now') lines.push('🧺 En pleine saison de récolte (~'+hs.daysLeft+' j restants)');
+  else if(hs.status === 'soon') lines.push('⏳ Récolte dans '+hs.daysUntil+' jours');
+  const od = (p.tasks||[]).filter(t => !t.done && t.dueDate && t.dueDate <= ymd());
+  if(od.length) lines.push('✅ '+od.length+' tâche(s) à faire : '+od.slice(0,2).map(t=>t.label).join(', '));
+  const w = computeWatering().due.find(d => d.p.id === p.id);
+  if(w) lines.push('💧 À arroser ('+litersHint(w)+')');
+  lines.push('👁️ Dernière visite : '+daysAgoLabel(p.lastChecked));
+  return lines;
+}
+function renderTourStep(){
+  const body = document.getElementById('tourBody');
+  const total = tourList.length;
+  if(tourIdx >= total){ return renderTourSummary(); }
+  const p = tourList[tourIdx];
+  const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+  const photo = p.photo || ((p.photos||[]).slice().sort((a,b)=>b.date.localeCompare(a.date))[0] || {}).image;
+  document.getElementById('tourProgress').textContent = (tourIdx+1)+' / '+total;
+  document.getElementById('tourBar').style.width = Math.round(tourIdx/total*100)+'%';
+  let h = `${photo ? `<img class="tour-photo" src="${photo}" alt="">` : `<div class="tour-emoji">${db.emoji}</div>`}
+    <div class="tour-name">${db.emoji} ${escapeHtml(plantDisplayName(p))}${p.variety ? ' — '+escapeHtml(p.variety) : ''}</div>
+    ${p.location ? `<div class="mc-none">📍 ${escapeHtml(p.location)}</div>` : ''}
+    <div class="tour-lines">${tourStatusLines(p).map(l => `<div>${escapeHtml(l)}</div>`).join('')}</div>`;
+  if(tourPending){
+    h += `<div class="tour-note">
+      <div class="sans" style="margin-bottom:6px;"><b>${tourPending === 'probleme' ? '⚠️ Quel problème ?' : '👀 Qu\'est-ce qu\'il faut surveiller ?'}</b></div>
+      <textarea id="tourText" placeholder="Décris en quelques mots (ou dicte 🎤)"></textarea>
+      <input type="file" id="tourPhotoInput" accept="image/*" capture="environment" style="display:none;">
+      <div class="tour-btns">
+        <button class="btn btn-secondary sans" id="tourPhotoBtn">📷 Photo</button>
+        ${tourPending === 'probleme' ? '<button class="btn btn-secondary sans" id="tourDiagBtn">🩺 Diagnostic</button>' : ''}
+        <button class="btn btn-primary sans" id="tourSaveBtn">Enregistrer et suivant ➜</button>
+      </div><div id="tourPhotoInfo" class="mc-none"></div></div>`;
+  } else {
+    h += `<div class="tour-btns tour-big">
+      <button class="btn btn-primary sans" id="tourOk">✅ RAS</button>
+      <button class="btn btn-secondary sans" id="tourWatch">👀 À surveiller</button>
+      <button class="btn btn-secondary sans" id="tourProblem">⚠️ Problème</button>
+      <button class="btn btn-secondary sans" id="tourWater">💧 Arrosé</button>
+    </div>
+    <div class="tour-nav sans"><button class="btn btn-secondary" id="tourPrev">◀ Précédent</button><button class="btn btn-secondary" id="tourSkip">Passer ▶</button></div>`;
+  }
+  body.innerHTML = h;
+  if(tourPending){
+    attachMic(document.getElementById('tourText'));
+    document.getElementById('tourPhotoBtn').onclick = ()=> document.getElementById('tourPhotoInput').click();
+    document.getElementById('tourPhotoInput').onchange = (e)=>{
+      const f = e.target.files[0]; if(!f) return;
+      readAndCompressImage(f, 700, (d, r)=>{ tourPhoto = d; tourRatio = r; document.getElementById('tourPhotoInfo').textContent = '📷 photo prête'; });
+    };
+    const dg = document.getElementById('tourDiagBtn');
+    if(dg) dg.onclick = ()=> openDiag(p.id);
+    document.getElementById('tourSaveBtn').onclick = ()=>{
+      const kind = tourPending === 'probleme' ? 'probleme' : 'observation';
+      addJournalEntry(p.id, kind, document.getElementById('tourText').value, tourPhoto, tourRatio);
+      p.lastChecked = ymd(); persist();
+      tourResults[p.id] = tourPending === 'probleme' ? 'problem' : 'watch';
+      tourPending = null; tourPhoto = null; tourRatio = null; tourIdx++; renderTourStep();
+    };
+  } else {
+    document.getElementById('tourOk').onclick = ()=>{ p.lastChecked = ymd(); persist(); tourResults[p.id] = 'ok'; tourIdx++; renderTourStep(); };
+    document.getElementById('tourWatch').onclick = ()=>{ tourPending = 'watch'; renderTourStep(); };
+    document.getElementById('tourProblem').onclick = ()=>{ tourPending = 'probleme'; renderTourStep(); };
+    document.getElementById('tourWater').onclick = ()=>{ p.lastWatered = ymd(); persist(); showSnackbar('Arrosage noté 💧'); renderTourStep(); };
+    document.getElementById('tourPrev').onclick = ()=>{ if(tourIdx > 0){ tourIdx--; renderTourStep(); } };
+    document.getElementById('tourSkip').onclick = ()=>{ tourIdx++; renderTourStep(); };
+  }
+}
+function renderTourSummary(){
+  document.getElementById('tourBar').style.width = '100%';
+  document.getElementById('tourProgress').textContent = 'Terminée';
+  const ids = Object.keys(tourResults);
+  const cnt = k => ids.filter(i => tourResults[i] === k).length;
+  const names = k => ids.filter(i => tourResults[i] === k).map(i => escapeHtml(plantDisplayName(getPlantById(i)||{type:'?'}))).join(', ');
+  let h = `<div class="tour-name">🎉 Tournée terminée</div>
+    <div class="tour-lines"><div>✅ ${cnt('ok')} RAS</div><div>👀 ${cnt('watch')} à surveiller${cnt('watch') ? ' : '+names('watch') : ''}</div><div>⚠️ ${cnt('problem')} problème(s)${cnt('problem') ? ' : '+names('problem') : ''}</div></div>
+    <div class="mc-none">Les observations et problèmes sont dans le journal de bord de chaque fiche.</div>
+    <div class="tour-btns"><button class="btn btn-primary sans" id="tourDone">Fermer</button></div>`;
+  document.getElementById('tourBody').innerHTML = h;
+  document.getElementById('tourDone').onclick = closeTour;
+  renderRecentJournal(); renderWaterPanel();
+}
+function closeTour(){ document.getElementById('tourOverlay').classList.add('hidden'); tourPending = null; renderAll(); }
+document.getElementById('openTourBtn').onclick = openTour;
+document.getElementById('closeTourBtn').onclick = closeTour;
+document.getElementById('tourOrder').onchange = ()=>{ if(!document.getElementById('tourOverlay').classList.contains('hidden')){ tourList = tourOrder(document.getElementById('tourOrder').value); tourIdx = 0; tourPending = null; renderTourStep(); } };
+
+/* ---------- 4. Rappels de récolte (notifications) ---------- */
+function checkAndNotify(){
+  if(!('Notification' in window) || Notification.permission !== 'granted' || !STATE.notificationsEnabled) return;
+  const todayStr = ymd();
+  if(STATE.lastNotifiedDate === todayStr) return;
+  if(!STATE.notifiedKeys) STATE.notifiedKeys = {};
+  const year = today().getFullYear();
+  const entering = [], soon = [], dueTasks = [];
+  const seen = {};
+  plants.forEach(p => {
+    const db = FRUIT_DB[p.type] || FRUIT_DB["Autre / personnalisé"];
+    const hs = harvestStatus(db.harvest[0], db.harvest[1]);
+    if(!seen[p.type]){
+      seen[p.type] = true;
+      const kE = 'h:'+p.type+':'+year, kS = 's:'+p.type+':'+year;
+      if(hs.status === 'now' && Math.round((today() - hs.start)/86400000) <= 3 && !STATE.notifiedKeys[kE]){ entering.push(p.type); STATE.notifiedKeys[kE] = true; }
+      else if(hs.status === 'soon' && hs.daysUntil <= 7 && !STATE.notifiedKeys[kS]){ soon.push(p.type+' ('+hs.daysUntil+' j)'); STATE.notifiedKeys[kS] = true; }
+    }
+    (p.tasks||[]).forEach(t => { if(!t.done && t.dueDate && t.dueDate <= todayStr) dueTasks.push(t.label+' ('+plantDisplayName(p)+')'); });
+  });
+  const parts = [];
+  if(entering.length) parts.push('🍑 Période de récolte ouverte : '+entering.slice(0,4).join(', ')+'.');
+  if(soon.length) parts.push('⏳ Bientôt prêt : '+soon.slice(0,4).join(', ')+'.');
+  if(WEATHER_CTX && WEATHER_CTX.tminToday !== undefined && WEATHER_CTX.tminToday <= 2){
+    const mine = plantsOfTypes(FROST_SENSITIVE);
+    if(mine.length) parts.push('🥶 Gel cette nuit : protège '+namesList(mine, 4)+'.');
+  }
+  const wd = computeWatering().due.filter(d => d.urgent);
+  if(wd.length) parts.push('💧 À arroser : '+wd.slice(0,3).map(d => plantDisplayName(d.p)).join(', ')+'.');
+  if(dueTasks.length) parts.push('✅ Tâches : '+dueTasks.slice(0,3).join(', ')+(dueTasks.length>3?'…':'')+'.');
+  if(!parts.length){ persist(); return; }
+  try{
+    new Notification('🍑 Le Carnet du Verger', { body: parts.join(' '), icon: 'icon-192.png' });
+    STATE.lastNotifiedDate = todayStr;
+    persist();
+  }catch(e){ console.error('Notification impossible', e); }
+}
+
+/* ---------- 9. Rappel de sauvegarde intelligent ---------- */
+function gardenCounts(gid){
+  const ps = (STATE.data[gid] && STATE.data[gid].plants) || [];
+  const c = { plants: ps.length, harvests: 0, photos: 0, journal: 0, purchases: ((STATE.data[gid] && STATE.data[gid].purchases)||[]).length };
+  ps.forEach(p => { c.harvests += (p.harvestLog||[]).length; c.photos += (p.photos||[]).length + (p.photo ? 1 : 0); c.journal += (p.journal||[]).length; });
+  return c;
+}
+function markExported(){
+  STATE.lastExportDate = ymd();
+  if(!STATE.exportSnapshot) STATE.exportSnapshot = {};
+  STATE.exportSnapshot[STATE.currentGardenId] = gardenCounts(STATE.currentGardenId);
+  persist();
+  renderExportReminder();
+}
+function unsavedChanges(){
+  const out = { plants:0, harvests:0, photos:0, journal:0, purchases:0 };
+  STATE.gardens.forEach(g => {
+    const now = gardenCounts(g.id), snap = (STATE.exportSnapshot && STATE.exportSnapshot[g.id]) || { plants:0, harvests:0, photos:0, journal:0, purchases:0 };
+    Object.keys(out).forEach(k => { out[k] += Math.max(0, now[k] - (snap[k]||0)); });
+  });
+  out.total = out.plants + out.harvests + out.photos + out.journal + out.purchases;
+  return out;
+}
+function renderExportReminder(){
+  const banner = document.getElementById('exportReminderBanner');
+  if(STATE.exportReminderDismissedAt === ymd()){ banner.style.display = 'none'; return; }
+  const totalPlants = STATE.gardens.reduce((s,g)=> s + (STATE.data[g.id].plants||[]).length, 0);
+  if(totalPlants === 0){ banner.style.display = 'none'; return; }
+  const last = STATE.lastExportDate;
+  const days = last ? daysBetweenStr(last, ymd()) : null;
+  let text = null;
+  if(STATE.exportSnapshot){
+    const u = unsavedChanges();
+    if(u.total >= 10 || (u.total >= 1 && days !== null && days >= 21) || (days !== null && days >= 60)){
+      const bits = [];
+      if(u.plants) bits.push(u.plants+' fiche'+(u.plants>1?'s':''));
+      if(u.harvests) bits.push(u.harvests+' récolte'+(u.harvests>1?'s':''));
+      if(u.photos) bits.push(u.photos+' photo'+(u.photos>1?'s':''));
+      if(u.journal) bits.push(u.journal+' note'+(u.journal>1?'s':'')+' de journal');
+      if(u.purchases) bits.push(u.purchases+' achat'+(u.purchases>1?'s':''));
+      text = bits.length
+        ? `📤 Depuis ta dernière sauvegarde${days !== null ? ' ('+daysAgoLabel(last)+')' : ''} : ${bits.join(', ')} en plus, à sauvegarder.`
+        : `📤 Ta dernière sauvegarde date de ${days} jours. Pense à exporter.`;
+    }
+  } else {
+    if(!last) text = `📤 Tu n'as encore jamais exporté tes jardins. Fais-le régulièrement pour ne rien perdre si tu changes de téléphone.`;
+    else if(days >= 14) text = `📤 Ça fait ${days} jours que tu n'as pas exporté tes jardins. Pense à sauvegarder tes données.`;
+  }
+  if(!text){ banner.style.display = 'none'; return; }
+  document.getElementById('exportReminderText').textContent = text;
+  banner.style.display = 'flex';
+}
+
+const __lw = loadWeather;
+loadWeather = async function(){ try{ await __lw(); } finally { renderWaterPanel(); checkAndNotify(); } };
 
 renderAll();
 loadWeather();
