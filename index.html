@@ -608,6 +608,7 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
     </div>
     <div class="inner garden-switch-row">
       <button class="garden-btn sans" id="notifBtn">🔔 Activer les rappels</button>
+      <button class="garden-btn sans" id="plantnetKeyBtn">🔑 Clé d'identification</button>
       <button class="garden-btn sans" id="darkModeBtn">🌙 Mode sombre</button>
       <span class="notif-hint sans">Marche seulement si l'appli reste ouverte/récente en arrière-plan — pas de vraie notification appli fermée depuis longtemps (ça demanderait un serveur).</span>
     </div>
@@ -815,11 +816,35 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
       <input type="file" id="photoInput" accept="image/*" capture="environment">
       <img id="photoPreview" style="display:none;max-width:100%;margin-top:8px;border-radius:3px;border:1px solid var(--line);">
       <button type="button" class="btn btn-secondary sans" id="removePhotoBtn" style="display:none;margin-top:8px;">Supprimer la photo</button>
+      <button type="button" class="btn btn-primary sans" id="identifyBtn" style="display:none;margin-top:8px;">🔍 Identifier cette plante</button>
+      <div id="identResults" class="sans" style="margin-top:8px;"></div>
     </div>
     <div class="hint sans" id="typeHint"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="cancelAddBtn">Annuler</button>
       <button class="btn btn-primary" id="saveAddBtn">Créer la fiche</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Pl@ntNet key modal -->
+<div class="modal-overlay hidden" id="plantnetOverlay">
+  <div class="modal">
+    <h2>🔑 Clé d'identification Pl@ntNet</h2>
+    <p class="sans" style="font-size:14px;line-height:1.5;">Pour que l'appli reconnaisse une plante depuis une photo, il faut une clé gratuite (500 identifications par jour). À faire une seule fois :</p>
+    <ol class="sans" style="font-size:14px;line-height:1.6;padding-left:20px;">
+      <li>Crée un compte gratuit sur <b>my.plantnet.org</b></li>
+      <li>Dans ton compte, ouvre les <b>paramètres</b> et copie ta <b>clé API privée</b></li>
+      <li>Dans ces mêmes paramètres, coche <b>« exposer ma clé API »</b></li>
+      <li>Dans « domaines autorisés », ajoute : <b>victorpinkas13250-collab.github.io</b></li>
+      <li>Colle la clé ci-dessous</li>
+    </ol>
+    <div class="field"><input type="text" id="plantnetKeyInput" placeholder="Colle ta clé ici" autocomplete="off" autocapitalize="off"></div>
+    <div class="hint sans">La clé reste uniquement sur ce téléphone.</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="plantnetCancelBtn">Annuler</button>
+      <button class="btn btn-primary" id="plantnetSaveBtn">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -931,8 +956,13 @@ footer{text-align:center;color:var(--bark-soft);font-family:inherit;font-size:.7
       </div>
 
       <div class="help-section">
+        <h3>🔍 Je ne connais pas la plante</h3>
+        <p>Dans « Nouvelle fiche », prends une photo (feuille ou fleur, de près, bien nette) puis touche « Identifier cette plante ». L'appli propose des noms avec un pourcentage de confiance : touche le bon et la fiche se remplit. Première fois : il faut coller une clé gratuite Pl@ntNet (⋯ Plus d'actions → 🔑 Clé d'identification).</p>
+      </div>
+
+      <div class="help-section">
         <h3>💾 Où sont mes données ?</h3>
-        <p>Tout reste sur ton téléphone, dans ce navigateur. Rien n'est envoyé sur internet à part la carte, la météo et la recherche d'adresse. Pense à exporter régulièrement.</p>
+        <p>Tout reste sur ton téléphone, dans ce navigateur. Rien n'est envoyé sur internet à part la carte, la météo, la recherche d'adresse et la photo envoyée à Pl@ntNet quand tu identifies une plante. Pense à exporter régulièrement.</p>
       </div>
 
     </div>
@@ -2857,13 +2887,133 @@ document.getElementById('photoInput').onchange = (e)=>{
     pendingPhoto = dataUrl;
     pendingPhotoRatio = ratio;
     showPhotoPreview(dataUrl);
+    identUpdateBtn();
   });
+  readAndCompressImage(file, 1024, (big)=>{ identSource = big; identUpdateBtn(); });
 };
 document.getElementById('removePhotoBtn').onclick = ()=>{
   pendingPhoto = null;
   pendingPhotoRatio = null;
+  identSource = null;
   document.getElementById('photoInput').value = '';
   showPhotoPreview(null);
+  identUpdateBtn(); identMsg('');
+};
+
+
+/* ---------------- Identification de plante (Pl@ntNet) ---------------- */
+const PLANTNET_KEY_LS = 'verger-plantnet-key';
+const PLANTNET_MAP = {
+  'malus domestica':'Pomme','malus pumila':'Pomme','pyrus communis':'Poire','prunus persica':'Pêche',
+  'prunus armeniaca':'Abricot','prunus domestica':'Prune','prunus avium':'Cerise','prunus cerasus':'Cerise',
+  'ficus carica':'Figue','vitis vinifera':'Raisin de table','citrus limon':'Citron','citrus sinensis':'Orange',
+  'citrus reticulata':'Mandarine','citrus japonunshiu':'Mandarine','citrus medica':'Cédrat','citrus maxima':'Pomelo',
+  'citrus junos':'Yuzu','citrus australasica':'Citron caviar','citrus hystrix':'Combava','fortunella margarita':'Kumquat',
+  'punica granatum':'Grenade','mespilus germanica':'Nèfle','diospyros kaki':'Kaki','rubus idaeus':'Framboise',
+  'fragaria vesca':'Fraise','fragaria x ananassa':'Fraise','fragaria ananassa':'Fraise','ribes rubrum':'Groseille',
+  'ribes nigrum':'Cassis','rubus fruticosus':'Mûre','vaccinium corymbosum':'Myrtille','vaccinium myrtillus':'Myrtille',
+  'cucumis melo':'Melon','citrullus lanatus':'Pastèque','solanum lycopersicum':'Tomate','olea europaea':'Olive',
+  'juglans regia':'Noix','prunus dulcis':'Amande','castanea sativa':'Châtaigne','cydonia oblonga':'Coing',
+  'prunus cerasifera':'Mirabelle','physalis peruviana':'Physalis','actinidia deliciosa':'Kiwi','actinidia chinensis':'Kiwi',
+  'actinidia arguta':'Kiwaï','lycium barbarum':'Goji','arbutus unedo':'Arbouse','ziziphus jujuba':'Jujube',
+  'pistacia vera':'Pistache','acca sellowiana':'Feijoa','feijoa sellowiana':'Feijoa','hippophae rhamnoides':'Argousier',
+  'passiflora edulis':'Fruit de la passion (grenadille)','ocimum basilicum':'Basilic','petroselinum crispum':'Persil',
+  'allium schoenoprasum':'Ciboulette','mentha spicata':'Menthe','mentha x piperita':'Menthe','mentha piperita':'Menthe',
+  'thymus vulgaris':'Thym','rosmarinus officinalis':'Romarin','salvia rosmarinus':'Romarin','origanum vulgare':'Origan',
+  'origanum majorana':'Marjolaine','salvia officinalis':'Sauge','artemisia dracunculus':'Estragon',
+  'coriandrum sativum':'Coriandre','anethum graveolens':'Aneth','satureja hortensis':'Sarriette',
+  'laurus nobilis':'Laurier (laurier-sauce)','aloysia citrodora':'Verveine citronnelle','aloysia triphylla':'Verveine citronnelle'
+};
+function plantnetMatch(sci){
+  const k = String(sci||'').toLowerCase().replace(/×/g,'x').replace(/\s+/g,' ').trim().split(' ').slice(0,2).join(' ');
+  const t = PLANTNET_MAP[k];
+  return (t && FRUIT_DB[t]) ? t : null;
+}
+let identSource = null; // photo plus grande, dédiée à l'identification
+
+function identUpdateBtn(){
+  document.getElementById('identifyBtn').style.display = (identSource || pendingPhoto) ? 'inline-block' : 'none';
+}
+function dataUrlToBlob(d){
+  const parts = d.split(','), mime = parts[0].match(/:(.*?);/)[1], bin = atob(parts[1]);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime});
+}
+function identMsg(html){ document.getElementById('identResults').innerHTML = html; }
+
+async function runIdentify(){
+  const key = (function(){ try{ return localStorage.getItem(PLANTNET_KEY_LS)||''; }catch(e){ return ''; } })();
+  if(!key){ document.getElementById('plantnetOverlay').classList.remove('hidden'); return; }
+  const src = identSource || pendingPhoto;
+  if(!src){ identMsg('<div class="hint">Ajoute d\'abord une photo.</div>'); return; }
+  if(!navigator.onLine){ identMsg('<div class="hint" style="color:#a33;">Pas de connexion internet : l\'identification en a besoin.</div>'); return; }
+  const btn = document.getElementById('identifyBtn');
+  btn.disabled = true; btn.textContent = '⏳ Analyse en cours…';
+  identMsg('');
+  try{
+    const fd = new FormData();
+    fd.append('images', dataUrlToBlob(src), 'photo.jpg');
+    fd.append('organs', 'auto');
+    const url = 'https://my-api.plantnet.org/v2/identify/all?api-key='+encodeURIComponent(key)+'&lang=fr&nb-results=5';
+    const r = await fetch(url, {method:'POST', body:fd});
+    if(r.status===404){ identMsg('<div class="hint">Aucune plante reconnue sur cette photo. Essaie une photo plus nette d\'une feuille ou d\'une fleur, de près.</div>'); return; }
+    if(r.status===401||r.status===403){ identMsg('<div class="hint" style="color:#a33;">Clé refusée. Vérifie qu\'elle est bien copiée, que « exposer ma clé API » est coché et que le domaine <b>victorpinkas13250-collab.github.io</b> est autorisé.</div>'); return; }
+    if(r.status===429){ identMsg('<div class="hint" style="color:#a33;">Limite de 500 identifications par jour atteinte. Réessaie demain.</div>'); return; }
+    if(!r.ok){ identMsg('<div class="hint" style="color:#a33;">Erreur du service d\'identification ('+r.status+'). Réessaie plus tard.</div>'); return; }
+    const j = await r.json();
+    showIdentResults((j.results||[]).slice(0,5));
+  }catch(e){
+    identMsg('<div class="hint" style="color:#a33;">Impossible de joindre Pl@ntNet. Vérifie ta connexion, et que la clé est bien autorisée pour ce site (« exposer ma clé API »).</div>');
+  }finally{
+    btn.disabled = false; btn.textContent = '🔍 Identifier cette plante';
+  }
+}
+function showIdentResults(results){
+  if(!results.length){ identMsg('<div class="hint">Aucun résultat.</div>'); return; }
+  let h = '<div style="font-weight:600;margin-bottom:6px;">Suggestions (touche la bonne) :</div>';
+  results.forEach((res,i)=>{
+    const sci = (res.species && (res.species.scientificNameWithoutAuthor||res.species.scientificName)) || '?';
+    const common = (res.species && res.species.commonNames && res.species.commonNames[0]) || '';
+    const pct = Math.round((res.score||0)*100);
+    const match = plantnetMatch(sci);
+    h += '<button type="button" class="btn btn-secondary sans ident-pick" data-i="'+i+'" style="display:block;width:100%;text-align:left;margin-bottom:6px;">'
+      + '<b>'+escapeHtml(common||sci)+'</b> — '+pct+'%<br><span style="font-size:12px;opacity:.8;"><i>'+escapeHtml(sci)+'</i>'
+      + (match ? ' · ✅ dans ta liste : '+escapeHtml(match) : ' · hors liste')+'</span></button>';
+  });
+  h += '<div class="hint" style="font-size:11px;">Un score sous 50 % est à prendre avec prudence. Service d\'identification basé sur l\'API Pl@ntNet (my.plantnet.org).</div>';
+  identMsg(h);
+  document.querySelectorAll('.ident-pick').forEach(b=>{
+    b.onclick = ()=>{
+      const res = results[+b.dataset.i];
+      const sci = (res.species.scientificNameWithoutAuthor||res.species.scientificName||'');
+      const common = (res.species.commonNames && res.species.commonNames[0]) || '';
+      const match = plantnetMatch(sci);
+      const notesEl = document.getElementById('notes');
+      if(match){
+        typeSelect.value = match; updateTypeHint();
+      } else {
+        typeSelect.value = 'Autre / personnalisé'; updateTypeHint();
+        document.getElementById('customName').value = common || sci;
+      }
+      const line = 'Identifié par photo : '+(common?common+' — ':'')+sci;
+      if(notesEl.value.indexOf('Identifié par photo')<0) notesEl.value = (notesEl.value ? notesEl.value+'\n' : '') + line;
+      identMsg('<div class="hint" style="color:#2d6a3a;">✅ Fiche remplie : '+escapeHtml(match||common||sci)+'. Tu peux corriger avant de créer.</div>');
+    };
+  });
+}
+document.getElementById('identifyBtn').onclick = runIdentify;
+document.getElementById('plantnetKeyBtn').onclick = ()=>{
+  let k=''; try{ k=localStorage.getItem(PLANTNET_KEY_LS)||''; }catch(e){}
+  document.getElementById('plantnetKeyInput').value = k;
+  document.getElementById('plantnetOverlay').classList.remove('hidden');
+};
+document.getElementById('plantnetCancelBtn').onclick = ()=> document.getElementById('plantnetOverlay').classList.add('hidden');
+document.getElementById('plantnetSaveBtn').onclick = ()=>{
+  const k = document.getElementById('plantnetKeyInput').value.trim();
+  try{ if(k) localStorage.setItem(PLANTNET_KEY_LS,k); else localStorage.removeItem(PLANTNET_KEY_LS); }catch(e){}
+  document.getElementById('plantnetOverlay').classList.add('hidden');
+  showSnackbar(k ? 'Clé enregistrée ✅' : 'Clé supprimée');
 };
 
 /* ---------------- Fenêtre de saisie générique (remplace prompt()) ---------------- */
@@ -2906,6 +3056,7 @@ function openAddModal(){
   pendingPhoto = null;
   pendingPhotoRatio = null;
   showPhotoPreview(null);
+  identSource = null; identUpdateBtn(); identMsg('');
   typeSelect.selectedIndex = 0;
   updateTypeHint();
   addOverlay.classList.remove('hidden');
@@ -2929,6 +3080,7 @@ function openEdit(id){
   pendingPhoto = p.photo || null;
   pendingPhotoRatio = p.photoRatio || null;
   showPhotoPreview(pendingPhoto);
+  identSource = null; identUpdateBtn(); identMsg('');
   updateTypeHint();
   addOverlay.classList.remove('hidden');
 }
@@ -3338,6 +3490,7 @@ document.getElementById('closeHelpBtn').onclick = ()=> document.getElementById('
 
 /* ---------------- Nouveautés / historique des versions ---------------- */
 const CHANGELOG = [
+  { v:'v2.7.0', items:['🔍 Identifier une plante inconnue depuis une photo, sans quitter l\'appli (service Pl@ntNet)','Touche la bonne suggestion : la fiche se remplit toute seule','Réglage de la clé gratuite dans ⋯ Plus d\'actions → 🔑 Clé d\'identification'] },
   { v:'v2.6.0', items:['Vraies pages séparées façon appli native : 🏠 Accueil, 🗺️ Carte, 🍑 Fiches, 📊 Stats','Barre d\'onglets fixée en bas, accessible au pouce','Un seul écran affiché à la fois — fini le long défilement'] },
   { v:'v2.5.0', items:['Barre de navigation rapide collante (Accueil / Carte / Fiches / Stats) pour ne plus avoir à tout faire défiler','Panneau des fonds de carte replié par défaut, pour une section carte plus compacte','Boutons des cartes (supprimer/dupliquer/modifier) agrandis pour éviter les mauvais clics'] },
   { v:'v2.4.0', items:['Bouton flottant "+" toujours accessible, plus besoin de scroller en bas','Actions secondaires (export/import/partage/notifs) repliées par défaut pour un en-tête plus léger','Les fenêtres "Nouveau jardin" et "Renommer" remplacent les popups natives du téléphone, plus fiable'] },
@@ -3882,7 +4035,7 @@ document.getElementById('combinedPdfBtn').onclick = generateCombinedPdf;
 
 
 /* ---------------- Init ---------------- */
-const APP_VERSION = 'v2.6.0';
+const APP_VERSION = 'v2.7.0';
 document.getElementById('appVersion').textContent = '· ' + APP_VERSION;
 
 if('serviceWorker' in navigator){
